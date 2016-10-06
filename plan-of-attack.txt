@@ -1,0 +1,6 @@
+Baxter Dominoes Project: EE106A Final Project
+
+Team Members: Robert Spark, Anders Lewis
+
+Goals: Get Baxter to Play dominoes against a human, without hardcoded motion
+Using an open source gaming engine (or one homemade) make Baxter a worthy gaming adversary.
