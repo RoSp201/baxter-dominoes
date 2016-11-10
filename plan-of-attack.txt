@@ -4,3 +4,53 @@ Team Members: Robert Spark, Anders Lewis
 
 Goals: Get Baxter to Play dominoes against a human, without hardcoded motion
 Using an open source gaming engine (or one homemade) make Baxter a worthy gaming adversary.
+
+
+
+Motion Planning -- Robert
+
+1. get baxter to move to a location in space with moveit
+2. have baxter follow waypoints that do not violate constraints
+3. get baxter to read in ar tag and determine correct tf
+4. have baxter move to this ar tag using move it (without constraints)
+5. have baxter move to this ar tag using move it (with added contstraints/ wayspoints)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
