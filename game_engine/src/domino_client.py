@@ -4,7 +4,7 @@ import sys
 import rospy
 from DominoMove.srv import *
 
-def domino_client(x, y):
+def domino_client(moves):
     rospy.wait_for_service('domino_move')
     try:
         get_best_move = rospy.ServiceProxy('domino_move', DominoMove)

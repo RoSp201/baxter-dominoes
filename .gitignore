@@ -2,5 +2,7 @@ CMakeLists.txt
 devel
 build
 package.xml
+*.swp
+*.pyc
 
 
