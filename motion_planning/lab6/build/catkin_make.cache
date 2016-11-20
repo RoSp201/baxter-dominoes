@@ -1,2 +1,0 @@
-lab6
--DCATKIN_DEVEL_PREFIX=/home/cc/ee106a/fa16/class/ee106a-abx/ros_workspaces/lab6/devel -DCMAKE_INSTALL_PREFIX=/home/cc/ee106a/fa16/class/ee106a-abx/ros_workspaces/lab6/install -G Unix Makefiles
