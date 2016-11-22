@@ -1,0 +1,6 @@
+in camera/run_all.launch:
+- fixed correct coordinate frame by changing output frame to base
+- can view cartesian coordinates of AR tag seen by left_hand_camera in /ar_pose_marker topic
+- look at pose/orientation to find coordinates
+- create a subscriber to this topic to help Baxter find correct coordinates to move to position.
+
