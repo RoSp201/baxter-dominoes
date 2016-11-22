@@ -22,7 +22,7 @@ def follow(msg):
 
     li = tf.TransformListener()
     #transform frame coords, so with respect to base frame
-    (trans, rot)  = li.lookupTransform("left_hand_camera", "base", rospy.Time(0))
+    (trans, rot)  = li.lookupTransform("/cameras/left_hand_camera/left_hand_camera", "/cameras/left_hand_camera/base", rospy.Time(0))
     rbt = arp.return_rbt(trans=trans, rot=rot)
     
     print "callback message"
@@ -55,9 +55,9 @@ def follow(msg):
     request.ik_request.pose_stamped.header.frame_id = "base"
 
     #Set the desired orientation for the end effector HERE
-    request.ik_request.pose_stamped.pose.position.x = x + 0.3
-    request.ik_request.pose_stamped.pose.position.y = y
-    request.ik_request.pose_stamped.pose.position.z = z + 0.7
+    request.ik_request.pose_stamped.pose.position.x = 0.5#x + 0.3
+    request.ik_request.pose_stamped.pose.position.y = 0.0
+    request.ik_request.pose_stamped.pose.position.z = 0.5 #z + 0.5
     request.ik_request.pose_stamped.pose.orientation.x = 0.0
     request.ik_request.pose_stamped.pose.orientation.y = -1.0
     request.ik_request.pose_stamped.pose.orientation.z = 0.0
