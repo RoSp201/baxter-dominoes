@@ -22,10 +22,9 @@ def follow(msg):
 
     li = tf.TransformListener()
     #transform frame coords, so with respect to base frame
-    (trans, rot)  = li.lookupTransform("left_hand_camera", "base", rospy.Time(0))
+    (trans, rot)  = li.lookupTransform("/cameras/left_hand_camera/left_hand_camera", "/cameras/left_hand_camera/base", rospy.Time(0))
     rbt = arp.return_rbt(trans=trans, rot=rot)
     
-    print "callback message"
     global subscriber
     
     #Wait for the IK service to become available
@@ -37,27 +36,27 @@ def follow(msg):
     x = marker.pose.pose.position.x
     y = marker.pose.pose.position.y
     z = marker.pose.pose.position.z
-    print x, y, z
+    print "Cam coordinates: ", x, y, z
     #collected coordinates are observered with respect to camera frame.
     coords_cam_frame = np.array([x,y,z,1])
 
     base_coords = rbt.dot(coords_cam_frame)
-    print base_coords
+    print "Base coordinates: ",  base_coords
 
-
+    #this will help pause 
     raw_input("Hit enter") 
 
     #Construct the request
     request = GetPositionIKRequest()
     request.ik_request.group_name = "left_arm"
     request.ik_request.ik_link_name = "left_gripper"
-    request.ik_request.attempts = 20
+    request.ik_request.attempts = 10
     request.ik_request.pose_stamped.header.frame_id = "base"
 
     #Set the desired orientation for the end effector HERE
-    request.ik_request.pose_stamped.pose.position.x = x + 0.3
-    request.ik_request.pose_stamped.pose.position.y = y
-    request.ik_request.pose_stamped.pose.position.z = z + 0.7
+    request.ik_request.pose_stamped.pose.position.x = 0.5#x + 0.3
+    request.ik_request.pose_stamped.pose.position.y = 0.0
+    request.ik_request.pose_stamped.pose.position.z = 0.5 #z + 0.5
     request.ik_request.pose_stamped.pose.orientation.x = 0.0
     request.ik_request.pose_stamped.pose.orientation.y = -1.0
     request.ik_request.pose_stamped.pose.orientation.z = 0.0
@@ -74,7 +73,6 @@ def follow(msg):
     #orien_const.weight = 1.0;
     #consts = Constraints()
     #consts.orientation_constraints = [orien_const]
-    flag = False
 
     while not rospy.is_shutdown(): 
         try:
@@ -98,7 +96,6 @@ def follow(msg):
             print "Service call failed:%s"%e
     
         rospy.sleep(1)
-
     subscriber.unregister()
 
 
@@ -107,7 +104,7 @@ def listener(ar_tags):
 
     rospy.init_node("ik_from_ar_pos")
     subscriber = rospy.Subscriber("ar_pose_marker", AlvarMarkers, follow)
-    print("listener")
+    #print("listener")
     rospy.spin()
 
 
@@ -120,5 +117,11 @@ if __name__ == '__main__':
         ar_tags = {}
         ar_tags['ar3'] = 'ar_marker_' + sys.argv[1]
 
-        print('\nwas able to get here' )
+        #print('\nwas able to get here' )
         listener(ar_tags)
+
+
+
+
+
+
