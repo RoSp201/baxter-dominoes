@@ -2,6 +2,10 @@
 
 ### Guide to using Baxter ###
 
+
+```
+#!
+
 Run ~/.bashrc in every new bash window or after sshing into baxter
 
 Login team14:dominoespizza2016
@@ -46,3 +50,4 @@ http://mirror.umd.edu/roswiki/doc/diamondback/api/tf/html/python/tf_python.html
 
 To get information about seen ar_tag
 rostopic echo ar_pose_marker
+```
