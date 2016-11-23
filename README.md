@@ -37,6 +37,14 @@ For IK solver:
 		roslaunch baxter_moveit_config move_group.launch
 		Should have crazy long output ending in "All is well!..."
 
+*NOTE*
+if you want to do setup all in one command and don't care about the output of services you can launch everything with the following commands in a baxter shell:
+rosrun baxter_tools camera_control.py -o left_hand_camera -r 1280x800
+roslaunch follow run_all.launch &
+rosrun rviz rviz &
+rosrun baxter_interface joint_trajectory_action_server.py
+
+
 In new window:
 baxter.sh
 source devel/setup.bash in motion_planning

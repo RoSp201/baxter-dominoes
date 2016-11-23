@@ -10,7 +10,6 @@ from moveit_commander import MoveGroupCommander
 import numpy as np
 from ar_track_alvar_msgs.msg import AlvarMarkers
 
-global subscriber
 global target_tag
 
 #this node will subscribe to /ar_pose_marker once and then command Baxter 
@@ -46,21 +45,10 @@ def follow(msg):
     request.ik_request.attempts = 20
     request.ik_request.pose_stamped.header.frame_id = "base" 
 
-    #orien_const = OrientationConstraint()
-    #orien_const.link_name = "left_gripper";
-    #orien_const.header.frame_id = "base";
-    #orien_const.orientation.y = -1.0;
-    #orien_const.absolute_x_axis_tolerance = 0.1;
-    #orien_const.absolute_y_axis_tolerance = 0.1;
-    #orien_const.absolute_z_axis_tolerance = 0.1;
-    #orien_const.weight = 1.0;
-    #consts = Constraints()
-    #consts.orientation_constraints = [orien_const]
-
-    flag = False
     tf_listener = tf.TransformListener()
+    moved = False
 
-    while not rospy.is_shutdown(): 
+    while not moved:
 
         print "Cam coordinates: ", x1, y1, z1
         try:
@@ -70,7 +58,8 @@ def follow(msg):
 
         except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
             continue
-            
+
+        moved = True
         rbt = arp.return_rbt(trans=trans, rot=rot)
         base_coords = rbt.dot(coords_cam_frame)
         base_coords = base_coords.reshape(4,1)
@@ -80,7 +69,7 @@ def follow(msg):
         z2 = base_coords.item(2)
         print "Base coordinates: ", x2, y2, z2
 
-        raw_input("Enter to execute move: ")
+        #raw_input("Enter to execute move: ")
 
         #Set the desired orientation for the end effector HERE
         request.ik_request.pose_stamped.pose.position.x = x2
@@ -101,34 +90,24 @@ def follow(msg):
         #group.set_position_target([0.5, 0.0, 0.0])
 
         # Plan IK and execute
-        if flag == False:
-            print(response)
-            group.go()
-            print "tried to execute move."
-            #flag = True
-        else:
-            print "\n\nAlready moved. Please Restart.\n\n"
+        print("moving!")
+        group.go()
 
-        if response.error_code.val == 1:
-            #flag = True
-            pass
-    subscriber.unregister()
+    rospy.signal_shutdown("Moved arm")
     
 
 def listener():
 
     rospy.init_node("ik_from_ar_pos", anonymous=True)
-    subscriber = rospy.Subscriber("ar_pose_marker", AlvarMarkers, follow)
+    rospy.Subscriber("ar_pose_marker", AlvarMarkers, follow)
+
     # spin() simply keeps python from exiting until this node is stopped
     rospy.spin()
 
 
 if __name__ == '__main__':
-
     if len(sys.argv) < 2:
         sys.exit('Use: ik_from_ar_tag_pos.py [AR tag number for goal]')
     else:
-        #ar_tags = {}
-        #ar_tags['ar3'] = 'ar_marker_' + sys.argv[1]
         target_tag = int(sys.argv[1])
         listener()
