@@ -11,6 +11,7 @@ import numpy as np
 from ar_track_alvar_msgs.msg import AlvarMarkers
 
 global subscriber
+global target_tag
 
 #this node will subscribe to /ar_pose_marker once and then command Baxter 
 #try and move his left gripper to just above that location (the position of the AR tag in base frame)
@@ -22,7 +23,15 @@ def follow(msg):
     #Create the function used to call the service
     compute_ik = rospy.ServiceProxy('compute_ik', GetPositionIK)
     
-    marker = msg.markers[0]
+    marker = None
+    for m in msg.markers:
+        if m.id == target_tag:
+            marker = m
+
+    if not marker:
+        print("Ar tag {} not found.".format(target_tag))
+        return
+
     x1 = marker.pose.pose.position.x
     y1 = marker.pose.pose.position.y
     z1 = marker.pose.pose.position.z
@@ -76,7 +85,7 @@ def follow(msg):
         #Set the desired orientation for the end effector HERE
         request.ik_request.pose_stamped.pose.position.x = x2
         request.ik_request.pose_stamped.pose.position.y = y2
-        request.ik_request.pose_stamped.pose.position.z = z2 + 0.05
+        request.ik_request.pose_stamped.pose.position.z = z2 + 0.2
         request.ik_request.pose_stamped.pose.orientation.x = 0.0
         request.ik_request.pose_stamped.pose.orientation.y = -1.0
         request.ik_request.pose_stamped.pose.orientation.z = 0.0
@@ -96,16 +105,17 @@ def follow(msg):
             print(response)
             group.go()
             print "tried to execute move."
-            flag = True
+            #flag = True
         else:
             print "\n\nAlready moved. Please Restart.\n\n"
 
         if response.error_code.val == 1:
-            flag = True
+            #flag = True
+            pass
     subscriber.unregister()
     
 
-def listener(ar_tags):
+def listener():
 
     rospy.init_node("ik_from_ar_pos", anonymous=True)
     subscriber = rospy.Subscriber("ar_pose_marker", AlvarMarkers, follow)
@@ -118,12 +128,7 @@ if __name__ == '__main__':
     if len(sys.argv) < 2:
         sys.exit('Use: ik_from_ar_tag_pos.py [AR tag number for goal]')
     else:
-        ar_tags = {}
-        ar_tags['ar3'] = 'ar_marker_' + sys.argv[1]
-        listener(ar_tags)
-
-
-
-
-
-
+        #ar_tags = {}
+        #ar_tags['ar3'] = 'ar_marker_' + sys.argv[1]
+        target_tag = int(sys.argv[1])
+        listener()
