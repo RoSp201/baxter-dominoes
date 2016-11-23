@@ -1,29 +1,48 @@
 # README #
 
-This README would normally document whatever steps are necessary to get your application up and running.
+### Guide to using Baxter ###
 
-### What is this repository for? ###
+Run ~/.bashrc in every new bash window or after sshing into baxter
 
-* Quick summary
-* Version
-* [Learn Markdown](https://bitbucket.org/tutorials/markdowndemo)
+Login team14:dominoespizza2016
+Check ~/.bashrc for "source /opt/ros/indigo/setup.bash" "source /scratch/shared/baxter_ws/devel/setup.bash"
+Go into workspace
+Run baxter.sh when you want to use baxter
+Might have to source setup.bash when ssh'ed into baxter
 
-### How do I get set up? ###
+Baxter setup:
+Enable robot with baxter_tools enable_robot.py -e
+Untuck with baxter_tools tuck_arms -u
+rosrun baxter_tools camera_control.py -o left_hand_camera -r 1280x800
 
-* Summary of set up
-* Configuration
-* Dependencies
-* Database configuration
-* How to run tests
-* Deployment instructions
+Our setup:
+roslaunch follow run_all.launch
+rosrun rviz rviz
+If not in saved config:
+	add camera frame
+	set image topic /cameras/left_hand_camera/image
+	add tf frame
+	set fixed frame in global options to base
+	Under TF, uncheck "All Enabled", check "base" "left_gripper" "left_hand_camera" "ar_marker_#"
+	If ar tag is in camera view, should automatically show up in list
 
-### Contribution guidelines ###
+For IK solver:
+	rosrun baxter_interface joint_trajectory_action_server.py
 
-* Writing tests
-* Code review
-* Other guidelines
+	In new window:
+		roslaunch baxter_moveit_config move_group.launch
+		Should have crazy long output ending in "All is well!..."
 
-### Who do I talk to? ###
+In new window:
+baxter.sh
+source devel/setup.bash in motion_planning
+rosrun follow ik_from_ar_tag_pos.py #
+	where # is the integer ar tag number
 
-* Repo owner or admin
-* Other community or team contact
+
+wiki.ros.org/tf/TFUsingPython
+http://mirror.umd.edu/roswiki/doc/diamondback/api/tf/html/python/tf_python.html
+	transformPoint
+
+To get information about seen ar_tag
+rostopic echo ar_pose_marker
