@@ -5,10 +5,11 @@ import rospy
 from tf2_msgs.msg import TFMessage
 import ar_tag_pos as arp
 from moveit_msgs.srv import GetPositionIK, GetPositionIKRequest, GetPositionIKResponse
-from geometry_msgs.msg import PoseStamped
-from moveit_commander import MoveGroupCommander
+from geometry_msgs.msg import PoseStamped, Pose
+from moveit_commander import MoveGroupCommander, RobotCommander, roscpp_initialize, PlanningSceneInterface
 import numpy as np
 from ar_track_alvar_msgs.msg import AlvarMarkers
+from baxter_interface import gripper as baxter_gripper
 
 global target_tag
 
@@ -42,7 +43,7 @@ def follow(msg):
     request = GetPositionIKRequest()
     request.ik_request.group_name = "left_arm"
     request.ik_request.ik_link_name = "left_gripper"
-    request.ik_request.attempts = 20
+    request.ik_request.attempts = 30
     request.ik_request.pose_stamped.header.frame_id = "base" 
 
     tf_listener = tf.TransformListener()
@@ -53,8 +54,8 @@ def follow(msg):
         print "Cam coordinates: ", x1, y1, z1
         try:
             #transform frame coords, so with respect to base frame
-            tf_listener.waitForTransform("base", "left_hand_camera", rospy.Time(0), rospy.Duration(4.0))
-            (trans, rot) = tf_listener.lookupTransform("base", "left_hand_camera", rospy.Time(0))
+            tf_listener.waitForTransform("base", "left_hand_camera_axis", rospy.Time(0), rospy.Duration(4.0))
+            (trans, rot) = tf_listener.lookupTransform("base", "left_hand_camera_axis", rospy.Time(0))
 
         except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
             continue
@@ -69,21 +70,125 @@ def follow(msg):
         z2 = base_coords.item(2)
         print "Base coordinates: ", x2, y2, z2
 
-        #raw_input("Enter to execute move: ")
+        #WAYPOINTS
+        #make about 5 waypoints between baxters gripper position and goal state have planner move through all these points
+        goal = Pose()
+     
+        goal.position.x = x2
+        goal.position.y = y2
+        goal.position.z = z2 + 0.10
+        goal.orientation.x = 0.0
+        goal.orientation.y = -1.0
+        goal.orientation.z = 0.0
+        goal.orientation.w = 0.0 
+
+        goal3 = Pose()
+        goal3.position.x = x2
+        goal3.position.y = y2
+        goal3.position.z = z2 + 0.10
+        goal3.orientation.x = 0.0
+        goal3.orientation.y = -1.0
+        goal3.orientation.z = 0.0
+        goal3.orientation.w = 0.0  
+
 
         #Set the desired orientation for the end effector HERE
         request.ik_request.pose_stamped.pose.position.x = x2
         request.ik_request.pose_stamped.pose.position.y = y2
-        request.ik_request.pose_stamped.pose.position.z = z2 + 0.2
+        request.ik_request.pose_stamped.pose.position.z = z2 + 0.20
         request.ik_request.pose_stamped.pose.orientation.x = 0.0
         request.ik_request.pose_stamped.pose.orientation.y = -1.0
         request.ik_request.pose_stamped.pose.orientation.z = 0.0
         request.ik_request.pose_stamped.pose.orientation.w = 0.0  
 
-        response = compute_ik(request)
-        group = MoveGroupCommander("left_arm")
+        #response = compute_ik(request)
+        #group = MoveGroupCommander("left_arm")
 
-        # Setting position and orientation target
+
+        #USE FOR WAYPOINTS #########################################3
+        roscpp_initialize(sys.argv)
+        #Start a node
+        #rospy.init_node('waypoints_node')
+
+        #Initialize both arms
+        robot = RobotCommander()
+        scene = PlanningSceneInterface()
+        left_arm = MoveGroupCommander('left_arm')
+        #right_arm = moveit_commander.MoveGroupCommander('right_arm')
+        left_arm.set_planner_id('RRTConnectkConfigDefault')
+        left_arm.set_planning_time(10)
+        left_gripper = baxter_gripper.Gripper('left')
+        left_arm.allow_replanning(True)
+        left_arm.set_pose_reference_frame('base')
+
+        #get current pose of end effector
+        #pose_target = 
+        #pose_target.position.x += 0.0
+        waypoints = []
+        waypoints.append(goal)
+        (plan1, fraction) = left_arm.compute_cartesian_path(
+                                   waypoints,   # waypoints to follow with end 
+                                   0.03,        # eef_step
+                                   0.0)         # jump_threshold
+        print "fraction: ", fraction
+        left_arm.execute(plan1)
+
+        ########################################################
+        print("moving to picking stage")
+
+        ######## Pick Up Object Once safely above ##############
+        goal2 = goal
+        
+        
+        goal2.position.z = z2 + 0.005
+        rospy.sleep(2)
+        waypoints = []
+        waypoints.append(goal)
+        (plan2, fraction) = left_arm.compute_cartesian_path(
+                                   waypoints,   # waypoints to follow with end 
+                                   0.01,        # eef_step
+                                   0.0)         # jump_threshold
+        print "fraction: ", fraction
+        left_arm.execute(plan2)
+        rospy.sleep(1.0)
+        #Close the left gripper
+        
+        waypoints = []
+        '''goal3 = Pose()
+        goal3.position.x = x2
+        goal3.position.y = y2
+        goal3.position.z = z2 + 0.10
+        goal3.orientation.x = 0.0
+        goal3.orientation.y = -1.0
+        goal3.orientation.z = 0.0
+        goal3.orientation.w = 0.0 '''
+
+        waypoints.append(goal3)
+        (plan3, fraction) = left_arm.compute_cartesian_path(
+                                   waypoints,   # waypoints to follow with end 
+                                   0.01,        # eef_step
+                                   0.0)         # jump_threshold
+        print "fraction: ", fraction
+        print('Closing...')
+        print("picking up tag")
+        left_gripper.close(block=True, timeout=6.0)
+
+        left_arm.execute(plan3)
+
+        print("lifting tag")
+        print('Opening...')
+        left_gripper.open(block=True)
+        rospy.sleep(.5)
+
+        print("done.")
+
+        
+
+
+
+
+
+        '''# Setting position and orientation target
         group.set_pose_target(request.ik_request.pose_stamped)
 
         # Setting just the position without specifying the orientation
@@ -91,7 +196,7 @@ def follow(msg):
 
         # Plan IK and execute
         print("moving!")
-        group.go()
+        group.go()'''
 
     rospy.signal_shutdown("Moved arm")
     

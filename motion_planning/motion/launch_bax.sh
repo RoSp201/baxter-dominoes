@@ -173,9 +173,16 @@ has been built (source /opt/ros/\${ros_version}/setup.sh; catkin_make).\n\
 		export PS1="[baxter - \${ROS_MASTER_URI}] \${PS1}"
 	fi
 	
+    source ~/.bashrc
+    sleep 2
 	source devel/setup.bash
+    sleep 2
 	rosrun baxter_tools enable_robot.py -e
+    sleep 2
 	rosrun baxter_tools tuck_arms.py -u
+    sleep 2
+    #rosrun baxter_tools camera_control.py -c head_camera
+    #sleep 2
 	rosrun baxter_tools camera_control.py -o left_hand_camera -r 1280x800
 
 EOF

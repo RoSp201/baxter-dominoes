@@ -32,7 +32,7 @@ def main():
     pose_target.position.x += 0.05
     waypoints = []
     waypoints.append(pose_target)
-    (plan3, fraction) = group.compute_cartesian_path(
+    (plan3, fraction) = left_arm.compute_cartesian_path(
                                waypoints,   # waypoints to follow with end 
                                0.01,        # eef_step
                                0.0)         # jump_threshold
