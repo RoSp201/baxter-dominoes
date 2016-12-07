@@ -2,6 +2,17 @@
   <!-- Created by Robert Spark on 12/7/16 -->
   <!-- Copyright © 2016 Robert Spark. All rights reserved. -->
 
+  <!-- enable baxter before use -->
+  <arg name="enable" default="-e" />
+  <node name="enable_robot" pkg="baxter_tools" type="enable_robot.py" args="$(enable)" />
+  <!-- end enable script -->
+
+  <!-- NOTE: MOVE TABLE AWAY FROM BAXTER DURING THIS STEP OR MAKE SURE ARMS WON'T HIT TABLE -->
+  
+  <!-- have baxter move into a better starting configuration -->
+  <arg name="untuck" default="-u" />
+  <node name="tuck_arms" pkg="baxter_tools" type="tuck_arms.py" args="$(untuck)" />
+  <!-- end baxter arms config -->
 
   <!-- arguments for calibrating left_hand_camera with baxter_tools package -->
   <arg name="close" default="-c" />
@@ -19,7 +30,7 @@
   <!-- end rviz launch -->
 
   <!-- launch joint trajectory action server in serparate terminal -->
-  <node name="joint_trajectory_action_servery.py" pkg="baxter_moveit_config" type="joint_trajectory_action_server.py" output="screen" launch-prefix="xterm -e" />
+  <node name="joint_trajectory_action_servery.py" pkg="baxter_interface" type="joint_trajectory_action_server.py" output="screen" launch-prefix="xterm -e" />
   <!-- end args -->
 
   <!-- arguments for running ar_track_alvar package -->
