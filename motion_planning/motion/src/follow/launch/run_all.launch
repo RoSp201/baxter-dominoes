@@ -2,7 +2,7 @@
 
   <arg name="marker_size" default="1.79" />
   <arg name="max_new_marker_error" default="0.08" /> <!-- before 0.08 -->
-  <arg name="max_track_error" default="0.35" />
+  <arg name="max_track_error" default="0.5" />
   <arg name="cam_image_topic" default="/cameras/left_hand_camera/image" />
   <arg name="cam_info_topic" default="/cameras/left_hand_camera/camera_info_std" />
   <arg name="output_frame" default="/left_hand_camera_axis" />

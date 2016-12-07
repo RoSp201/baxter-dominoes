@@ -6,6 +6,12 @@
 ```
 #!
 
+
+TO turn off baxter's sonar sensors for recording video without feedback:
+rostopic pub /robot/sonar/head_sonar/set_sonars_enabled std_msgs/UInt16 0
+
+
+
 Run ~/.bashrc in every new bash window or after sshing into baxter
 
 Login team14:dominoespizza2016

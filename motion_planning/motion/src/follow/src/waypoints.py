@@ -2,7 +2,7 @@
 import sys
 import rospy
 import moveit_commander
-from moveit_msgs.msg import OrientationConstraint, Constraints
+from moveit_msgs.msg import #Constraints #OrientationConstraint,
 from geometry_msgs.msg import PoseStamped
 from baxter_interface import gripper as baxter_gripper
 
@@ -28,7 +28,6 @@ def main():
 
 
     #get current pose of end effector
-    pose_target = left_arm.get_current_pose().pose
     pose_target.position.x += 0.05
     waypoints = []
     waypoints.append(pose_target)
