@@ -1,8 +1,31 @@
 <launch>
+  <!-- Created by Robert Spark on 12/7/16 -->
+  <!-- Copyright © 2016 Robert Spark. All rights reserved. -->
 
+
+  <!-- arguments for calibrating left_hand_camera with baxter_tools package -->
+  <arg name="close" default="-c" />
+  <arg name="head" default="head_camera" />
+  <arg name="left" default="left_hand_camera" />
+  <arg name="res" default="-r" />
+  <arg name="open" defaut="-o" />
+  <arg name="res_size" default="1280x800" />
+  <node name="camera_control_close" pkg="baxter_tools" type="camera_control.py" args="$(close) $(head)" />
+  <node name="camera_control_open" pkg="baxter_tools" type="camera_control.py" args="$(open) $(left) $(res) $(res_size)" />
+  <!-- end of calibrating camera -->
+
+  <!-- launch rviz in separate terminal -->
+  <node name="rviz" pkg="rviz" output="screen" type="rviz" launch-prefix="xterm -e" />
+  <!-- end rviz launch -->
+
+  <!-- launch joint trajectory action server in serparate terminal -->
+  <node name="joint_trajectory_action_servery.py" pkg="baxter_moveit_config" type="joint_trajectory_action_server.py" output="screen" launch-prefix="xterm -e" />
+  <!-- end args -->
+
+  <!-- arguments for running ar_track_alvar package -->
   <arg name="marker_size" default="1.79" />
   <arg name="max_new_marker_error" default="0.08" /> <!-- before 0.08 -->
-  <arg name="max_track_error" default="0.5" />
+  <arg name="max_track_error" default="0.3" />
   <arg name="cam_image_topic" default="/cameras/left_hand_camera/image" />
   <arg name="cam_info_topic" default="/cameras/left_hand_camera/camera_info_std" />
   <arg name="output_frame" default="/left_hand_camera_axis" />
