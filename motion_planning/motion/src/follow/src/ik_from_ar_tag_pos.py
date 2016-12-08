@@ -17,12 +17,25 @@ global target_tag
 #this node will subscribe to /ar_pose_marker once and then command Baxter 
 #try and move his left gripper to just above that location (the position of the AR tag in base frame)
 
+def pick_and_place(goal_pose, flip=False):
+    waypoints = []
+    waypoints.append(goal_pose)
+    (plan, fraction) = left_arm.compute_cartesian_path(
+                                   waypoints,   # waypoints to follow with end 
+                                   0.01,        # eef_step
+                                   0.0)         # jump_threshold
+    print "fraction: ", fraction
+    left_arm.execute(plan)
+    rospy.sleep(3.0)
+
+
+
 def follow(msg):
     
     #Wait for the IK service to become available
-    rospy.wait_for_service('compute_ik') 
+    #rospy.wait_for_service('compute_ik') 
     #Create the function used to call the service
-    compute_ik = rospy.ServiceProxy('compute_ik', GetPositionIK)
+    #compute_ik = rospy.ServiceProxy('compute_ik', GetPositionIK)
     
     marker = None
     for m in msg.markers:
@@ -117,6 +130,7 @@ def follow(msg):
         goal3.orientation.z = 0.0
         goal3.orientation.w = 0.0  
 
+        #intialization information for computer cartesian path
         roscpp_initialize(sys.argv)
         robot = RobotCommander()
         scene = PlanningSceneInterface()
@@ -125,19 +139,23 @@ def follow(msg):
         left_arm.set_planning_time(10)
         left_gripper = baxter_gripper.Gripper('left')
         left_arm.allow_replanning(True)
+        left_gripper.set_vacuum_threshold(2.0)
         left_arm.set_pose_reference_frame('base')
 
+
+
         ### Move end effector to 10 cm above target (fast motion with less waypoints) ###
-        waypoints = []
+        '''waypoints = []
         waypoints.append(goal)
         (plan1, fraction) = left_arm.compute_cartesian_path(
                                    waypoints,   # waypoints to follow with end 
                                    0.01,        # eef_step
                                    0.0)         # jump_threshold
-        print "fraction: ", fraction
+        #print "fraction: ", fraction
         left_arm.execute(plan1)
-        rospy.sleep(3.0)
-
+        rospy.sleep(3.0)'''
+        print("\nMoving to staging position before pick.")
+        pick_and_place(goal)
 
         ######## Pick Up Object Once safely above ##############
         #Precisely pick up object by increasing number of waypoints
@@ -146,7 +164,7 @@ def follow(msg):
         goal2.position.z = z2 + 0.005
         goal4 = goal2
 
-        waypoints = []
+        '''waypoints = []
         waypoints.append(goal)
         (plan2, fraction) = left_arm.compute_cartesian_path(
                                    waypoints,   # waypoints to follow with end 
@@ -154,38 +172,45 @@ def follow(msg):
                                    0.0)         # jump_threshold
         print "fraction: ", fraction
         left_arm.execute(plan2)
-        rospy.sleep(1.0)
+        rospy.sleep(1.0)'''
+        print("prepare to grab domino.")
+        pick_and_place(goal2)
         
-        waypoints = []
+        '''waypoints = []
         waypoints.append(goal3)
         (plan3, fraction) = left_arm.compute_cartesian_path(
                                    waypoints,   # waypoints to follow with end 
                                    0.01,        # eef_step
                                    0.0)         # jump_threshold
-
+        
         ### Lift Object With suction gripper ###
-        print "fraction: ", fraction
-        print("\npicking up tag")
+        print "fraction: ", fraction'''
 
-        left_gripper.set_vacuum_threshold(2.0)
+
+        print("\npicking up tag")
         left_gripper.close(block=False)
         print("\nvaccuum sensor reading: {}".format(left_gripper.vacuum_sensor()))
-        rospy.sleep(0.5)
-        left_arm.execute(plan3)
+        #rospy.sleep(0.5)
+        #left_arm.execute(plan3)
+        
+        #rospy.sleep(0.5)
         print("\nlifting tag")
-        rospy.sleep(1.0)
+        pick_and_place(goal3)
 
-        #rotate the domino 180 degrees of current position
+        #rotate the domino 180 degrees of current position about z axis of gripper
+
+        left_arm.set_pose_reference_frame("left_gripper")
         goal5 = Pose()
-        goal3.position.x = x2
-        goal3.position.y = y2
-        goal3.position.z = z2 + 0.10
+        goal5.position.x = x2
+        goal5.position.y = y2
+        goal5.position.z = z2 + 0.10
         goal5.orientation.x = 0
         goal5.orientation.y = -1.0
         goal5.orientation.z = -0.1
         goal5.orientation.w = 0
+
         print("\nspinning domino in place")
-        waypoints = []
+        '''waypoints = []
         waypoints.append(goal5)
         (plan5, fraction) = left_arm.compute_cartesian_path(
                                    waypoints,   # waypoints to follow with end 
@@ -193,12 +218,15 @@ def follow(msg):
                                    0.0)         # jump_threshold
         print "fraction: ", fraction
         left_arm.execute(plan5)
-        rospy.sleep(1.0)
+        rospy.sleep(1.0)'''
 
 
 
         #set the domino back down without dropping to avoid misplacement
         print("\nsetting back down")
+        pick_and_place(goal4)
+
+        '''
         waypoints = []
         waypoints.append(goal4)
         (plan4, fraction) = left_arm.compute_cartesian_path(
@@ -208,13 +236,19 @@ def follow(msg):
         print "fraction: ", fraction
         left_arm.execute(plan4)
         rospy.sleep(1.0)
+        '''
+
+
         print('Opening...')
         left_gripper.open(block=True)
         rospy.sleep(0.5)
 
-        #go back to staging position
+
         print("\ngoing back to staging position for next pick")
-        waypoints = []
+        pick_and_place(goal3)
+
+
+        '''waypoints = []
         waypoints.append(goal3)
         (plan6, fraction) = left_arm.compute_cartesian_path(
                                    waypoints,   # waypoints to follow with end 
@@ -223,10 +257,15 @@ def follow(msg):
         print "fraction: ", fraction
         left_arm.execute(plan6)
         rospy.sleep(1.0)
+        '''
+
+
+
+
+
 
 
         print("done.")
-
         
         '''# Setting position and orientation target
         group.set_pose_target(request.ik_request.pose_stamped)
