@@ -54,11 +54,11 @@ def follow(msg):
     coords_cam_frame = np.array([x1,y1,z1,1])
 
     #Construct the request
-    request = GetPositionIKRequest()
-    request.ik_request.group_name = "left_arm"
-    request.ik_request.ik_link_name = "left_gripper"
-    request.ik_request.attempts = 30
-    request.ik_request.pose_stamped.header.frame_id = "base" 
+    #request = GetPositionIKRequest()
+    #request.ik_request.group_name = "left_arm"
+    #request.ik_request.ik_link_name = "left_gripper"
+    #request.ik_request.attempts = 30
+    #request.ik_request.pose_stamped.header.frame_id = "base" 
 
     tf_listener = tf.TransformListener()
     moved = False
@@ -83,6 +83,19 @@ def follow(msg):
         y2 = base_coords.item(1)
         z2 = base_coords.item(2)
         print "Base coordinates: ", x2, y2, z2
+
+
+        #intialization information for computer cartesian path
+        roscpp_initialize(sys.argv)
+        robot = RobotCommander()
+        scene = PlanningSceneInterface()
+        left_arm = MoveGroupCommander('left_arm')
+        left_arm.set_planner_id('RRTConnectkConfigDefault')
+        left_arm.set_planning_time(10)
+        left_gripper = baxter_gripper.Gripper('left')
+        left_arm.allow_replanning(True)
+        left_gripper.set_vacuum_threshold(2.0)
+        left_arm.set_pose_reference_frame('base')
 
         #Set the desired orientation for the end effector HERE
         #request.ik_request.pose_stamped.pose.position.x = x2
@@ -121,29 +134,20 @@ def follow(msg):
         goal.orientation.z = 0.0
         goal.orientation.w = 0.0 
 
+        goal2 = goal
+        goal2.position.z = z2 + 0.005
+        goal4 = goal2
+
         goal3 = Pose()
         goal3.position.x = x2
         goal3.position.y = y2
-        goal3.position.z = z2 + 0.10
+        goal3.position.z = z2 + 0.20
         goal3.orientation.x = 0.0
         goal3.orientation.y = -1.0
         goal3.orientation.z = 0.0
         goal3.orientation.w = 0.0  
 
-        #intialization information for computer cartesian path
-        roscpp_initialize(sys.argv)
-        robot = RobotCommander()
-        scene = PlanningSceneInterface()
-        left_arm = MoveGroupCommander('left_arm')
-        left_arm.set_planner_id('RRTConnectkConfigDefault')
-        left_arm.set_planning_time(10)
-        left_gripper = baxter_gripper.Gripper('left')
-        left_arm.allow_replanning(True)
-        left_gripper.set_vacuum_threshold(2.0)
-        left_arm.set_pose_reference_frame('base')
-
-
-
+       
         ### Move end effector to 10 cm above target (fast motion with less waypoints) ###
         '''waypoints = []
         waypoints.append(goal)
@@ -159,10 +163,6 @@ def follow(msg):
 
         ######## Pick Up Object Once safely above ##############
         #Precisely pick up object by increasing number of waypoints
-        
-        goal2 = goal
-        goal2.position.z = z2 + 0.005
-        goal4 = goal2
 
         '''waypoints = []
         waypoints.append(goal)
@@ -193,23 +193,26 @@ def follow(msg):
         #rospy.sleep(0.5)
         #left_arm.execute(plan3)
         
-        #rospy.sleep(0.5)
+        rospy.sleep(0.5)
         print("\nlifting tag")
         pick_and_place(goal3)
 
         #rotate the domino 180 degrees of current position about z axis of gripper
-
         left_arm.set_pose_reference_frame("left_gripper")
         goal5 = Pose()
         goal5.position.x = x2
         goal5.position.y = y2
         goal5.position.z = z2 + 0.10
         goal5.orientation.x = 0
-        goal5.orientation.y = -1.0
-        goal5.orientation.z = -0.1
-        goal5.orientation.w = 0
+        goal5.orientation.y = 0
+        goal5.orientation.z = 0
+        goal5.orientation.w = 1.0
 
         print("\nspinning domino in place")
+        pick_and_place(goal5)
+        left_arm.set_pose_reference_frame("base")
+
+
         '''waypoints = []
         waypoints.append(goal5)
         (plan5, fraction) = left_arm.compute_cartesian_path(
@@ -269,10 +272,8 @@ def follow(msg):
         
         '''# Setting position and orientation target
         group.set_pose_target(request.ik_request.pose_stamped)
-
         # Setting just the position without specifying the orientation
         #group.set_position_target([0.5, 0.0, 0.0])
-
         # Plan IK and execute
         group.go()'''
 
@@ -294,3 +295,6 @@ if __name__ == '__main__':
     else:
         target_tag = int(sys.argv[1])
         listener()
+
+
+
