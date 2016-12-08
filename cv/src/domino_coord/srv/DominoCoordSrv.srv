@@ -1,0 +1,7 @@
+# An request containing cv parameters
+uint32 contourArea
+uint32[] cannyParams # [canny1, canny2]
+uint32[] houghParams # [minDist, param1, param2, minRadius, maxRadius]
+---
+# A response containing domino coordinate data
+uint32[] dominos # [dominoNo1, dominoNo2, orientation, screenCoordX, screenCoordY....]
