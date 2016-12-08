@@ -11,6 +11,7 @@ from moveit_commander import MoveGroupCommander, RobotCommander, roscpp_initiali
 import numpy as np
 from ar_track_alvar_msgs.msg import AlvarMarkers
 from baxter_interface import gripper as baxter_gripper
+import moveit_msgs.msg 
 
 global target_tag
 
@@ -83,19 +84,7 @@ def follow(msg):
         #response = compute_ik(request)
         #group = MoveGroupCommander("left_arm")
 
-        #Create a path constraint for the arm
-        # UNCOMMENT TO ENABLE ORIENTATION CONSTRAINTS
-        # orien_const = OrientationConstraint()
-        # orien_const.link_name = "left_gripper";
-        # orien_const.header.frame_id = "base";
-        # orien_const.orientation.y = -1.0;
-        # orien_const.absolute_x_axis_tolerance = 0.02;
-        # orien_const.absolute_y_axis_tolerance = 0.02;
-        # orien_const.absolute_z_axis_tolerance = 0.02;
-        # orien_const.weight = 1.0;
-        # consts = Constraints()
-        # consts.orientation_constraints = [orien_const]
-        # left_arm.set_path_constraints(consts)
+        
 
         #WAYPOINTS
         #make about 5 waypoints between baxters gripper position and goal state have planner move through all these points
@@ -125,7 +114,24 @@ def follow(msg):
         left_arm.set_planning_time(10)
         left_gripper = baxter_gripper.Gripper('left')
         left_arm.allow_replanning(True)
+        left_arm.set_end_effector_link("left_gripper")
         left_arm.set_pose_reference_frame('base')
+        left_gripper.set_vacuum_threshold(2.0)
+
+        #Create a path constraint for the arm
+        # UNCOMMENT TO ENABLE ORIENTATION CONSTRAINTS
+        #orien_const = moveit_msgs.msg.OrientationConstraint()
+        #orien_const.link_name = "left_gripper";
+        
+        #orien_const.header.frame_id = "base";
+        #orien_const.orientation.y = -1.0;
+        #orien_const.absolute_x_axis_tolerance = 0.02;
+        #orien_const.absolute_y_axis_tolerance = 0.02;
+        #orien_const.absolute_z_axis_tolerance = 0.02;
+        #orien_const.weight = 1.0;
+        #consts = moveit_msgs.msg.Constraints()
+        #consts.orientation_constraints = [orien_const]
+        #left_arm.set_path_constraints(consts)
 
         ### Move end effector to 10 cm above target (fast motion with less waypoints) ###
         waypoints = []
@@ -167,7 +173,7 @@ def follow(msg):
         print "fraction: ", fraction
         print("\npicking up tag")
 
-        left_gripper.set_vacuum_threshold(2.0)
+        
         left_gripper.close(block=False)
         print("\nvaccuum sensor reading: {}".format(left_gripper.vacuum_sensor()))
         rospy.sleep(0.5)
@@ -175,15 +181,20 @@ def follow(msg):
         print("\nlifting tag")
         rospy.sleep(1.0)
 
+
+
         #rotate the domino 180 degrees of current position
+        print("current pose of eof: {}".format(left_arm.get_current_pose("left_gripper")))
+        #print("current rpy of eof: {}".format(left_arm.get_current_rpy("left_gripper")))
         goal5 = Pose()
-        goal3.position.x = x2
-        goal3.position.y = y2
-        goal3.position.z = z2 + 0.10
+        goal5.position.x = x2
+        goal5.position.y = y2
+        goal5.position.z = z2 + 0.20
         goal5.orientation.x = 0
         goal5.orientation.y = -1.0
-        goal5.orientation.z = -0.1
+        goal5.orientation.z = 0
         goal5.orientation.w = 0
+                
         print("\nspinning domino in place")
         waypoints = []
         waypoints.append(goal5)
@@ -194,8 +205,6 @@ def follow(msg):
         print "fraction: ", fraction
         left_arm.execute(plan5)
         rospy.sleep(1.0)
-
-
 
         #set the domino back down without dropping to avoid misplacement
         print("\nsetting back down")
@@ -221,7 +230,7 @@ def follow(msg):
                                    0.01,        # eef_step
                                    0.0)         # jump_threshold
         print "fraction: ", fraction
-        left_arm.execute(plan6)
+        left_arm.execute(plan3)
         rospy.sleep(1.0)
 
 
