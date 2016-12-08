@@ -10,10 +10,20 @@ import cv_bridge
 from sensor_msgs.msg import Image
 from domino_coord.srv import ImageSrv, ImageSrvResponse, DominoCoordSrv, DominoCoordSrvResponse
 
+BUFFER_LENGTH = 100
 
 class DominoService:
+  imgBuffer = []
+  counter = -1
+
   def imgReceived(self, message):
-    self.lastImage = message
+    if counter == -1:
+      imgBuffer = [message] * BUFFER_LENGTH
+      counter = 0
+    else:
+      imgBuffer[0] = message
+      counter = (counter + 1) % BUFFER_LENGTH
+
 
   def getLastImage(self, request):
     return ImageSrvResponse(self.lastImage)
@@ -32,6 +42,12 @@ class DominoService:
     cont2 = [cont for cont in contours if cv2.contourArea(cont)>contourArea]
     for i in range(len(cont2)):
         ((cx,cy),(w,h),angle) = rect = cv2.minAreaRect(cont2[i])
+        match = False
+        for i in range(len(response)5):
+          if abs(cx-response[3 + 5*i]) < 10 or abs(cy - response[4 + 5*i])< 10:
+            match = True
+        if match:
+          continue
         if abs(angle) > 45:
             w,h = h,w
         box = cv2.cv.BoxPoints(rect)
@@ -70,7 +86,15 @@ class DominoService:
                     else:
                         side2 += 1
         response += [side1, side2, vert, cx, cy]
-    return DominoCoordSrvResponse(response)
+    return response
+
+  def analyzeBuffer(self, request):
+    totalResponse = []
+    for i in range(BUFFER_LENGTH):
+      response = self.analyzeImage(request)
+      for i in range(len(response) / 5):
+        for i in range(len(totalResponse) / 5):
+          if abs(response[3 + 5*i])
 
 
   def __init__(self):
@@ -81,13 +105,13 @@ class DominoService:
     rospy.init_node('cam_listener')
 
     #Subscribe to the image topic
-    rospy.Subscriber("/usb_cam/image_raw", Image, self.imgReceived)
+    rospy.Subscriber("/cameras/left_hand_camera/image", Image, self.imgReceived)
 
     #Create last image service
     rospy.Service('last_image', ImageSrv, self.getLastImage)
 
     #Create analyze image service
-    rospy.Service('domino_finder', DominoCoordSrv, self.analyzeImage)
+    rospy.Service('domino_finder', DominoCoordSrv, self.analyzeBuffer)
 
     print "All Ready"
 

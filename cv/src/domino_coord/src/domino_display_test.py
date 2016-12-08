@@ -25,12 +25,18 @@ def imgReceived(message):
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     blur = cv2.GaussianBlur(gray,(3,3),0)
     img = cv2.Canny(blur,canny1,canny2)
-
+    response = []
     #img = cv2.adaptiveThreshold(img,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY,11,2)
     contours, hierarchy = cv2.findContours(img,1,cv2.CHAIN_APPROX_SIMPLE)
     cont2 = [cont for cont in contours if cv2.contourArea(cont)>contourArea]
     for i in range(len(cont2)):
         ((cx,cy),(w,h),angle) = rect = cv2.minAreaRect(cont2[i])
+        match = False
+        for i in range(len(response)/5):
+          if abs(cx-response[3 + 5*i]) < 10 or abs(cy - response[4 + 5*i])< 10:
+            match = True
+        if match:
+          continue
         if abs(angle) > 45:
             w,h = h,w
         box = cv2.cv.BoxPoints(rect)
@@ -77,7 +83,9 @@ def imgReceived(message):
                     else:
                         side2 += 1
         print(str(side1) + " | " + str(side2))
+        print (cx, cy)
         print vert
+        response += [side1, side2, vert, cx, cy]
         cv2.imshow('domino' + str(i), dom)
 
 
@@ -112,8 +120,8 @@ def listener():
     cv2.setTrackbarPos('maxRadius','settings', 35)
 
     rospy.init_node('listener', anonymous=True)
-    #rospy.Subscriber("/cameras/left_hand_camera/image", Image, imgReceived)
-    rospy.Subscriber("/usb_cam/image_raw", Image, imgReceived)
+    rospy.Subscriber("/cameras/left_hand_camera/image", Image, imgReceived)
+    #rospy.Subscriber("/usb_cam/image_raw", Image, imgReceived)
     rospy.spin()
 
 def nothing(nothing):
