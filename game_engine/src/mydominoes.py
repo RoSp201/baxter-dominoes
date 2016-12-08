@@ -27,3 +27,28 @@ def score(domino):
     """Returns the sum of the pips on a domino.
     We want to get rid of dominoes with higher scores."""
     return domino[0] + domino[1]
+
+# Class for keeping board state:
+class Domino:
+    def __init__(self, pips):
+        # The syntax for pips is (top pip, bottom pip)
+        self.pips = pips
+        self.sides = {"top": None, "bottom": None, "left": None, "right": None}
+
+    def place(self, otherdom, pos):
+        """ Places otherdom at this domino's pos"""
+        assert not self.sides[pos]
+        self.sides[pos] = otherdom
+        otherdom.sides["bottom"] = self
+
+    def get_open_spots(self):
+        """Currently, we're operating on a simplified domino model wherein dominoes can only be in a line.
+        This just translates to finding the ends of a linked list."""
+        spots = []
+        top = self.sides["top"]
+        bottom = self.sides["bottom"]
+        #TODO: remember how to recursion
+        if not top:
+            spots.append(top.get_open_spots()[0])
+        if not bottom:
+            spots.append(bottom.get_open_spots()[1])
