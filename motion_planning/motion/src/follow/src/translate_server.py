@@ -8,6 +8,14 @@ import numpy as np
 #from ../srv import Translate.srv #so service knows format of message type for callback
 
 def handle_translate(coords):
+	"""
+	Translate.srv format:
+
+	PoseStamped pose_stamped
+	---
+	PoseStamped output_pose_stamped
+	
+	"""
     #this function will turn camera coordinates into base frame coordinates 
     #we can actually make the gripper orientation in terms of the ar tag frame orientation as seen by the base frame
     
