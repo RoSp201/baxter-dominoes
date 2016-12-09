@@ -1,0 +1,6 @@
+<launch>
+	<!-- have baxter move into a better starting configuration -->
+  	<arg name="un" default="-u" />
+  	<node name="tuck_arms" pkg="baxter_tools" type="tuck_arms.py" arg="$(un)" />
+  	<!-- end baxter arms config -->
+</launch>

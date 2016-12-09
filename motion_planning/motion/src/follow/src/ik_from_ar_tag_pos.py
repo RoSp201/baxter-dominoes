@@ -11,6 +11,7 @@ from moveit_commander import MoveGroupCommander, RobotCommander, roscpp_initiali
 import numpy as np
 from ar_track_alvar_msgs.msg import AlvarMarkers
 from baxter_interface import gripper as baxter_gripper
+import moveit_msgs.msg 
 
 global target_tag
 
@@ -109,22 +110,9 @@ def follow(msg):
         #response = compute_ik(request)
         #group = MoveGroupCommander("left_arm")
 
-        #Create a path constraint for the arm
-        # UNCOMMENT TO ENABLE ORIENTATION CONSTRAINTS
-        # orien_const = OrientationConstraint()
-        # orien_const.link_name = "left_gripper";
-        # orien_const.header.frame_id = "base";
-        # orien_const.orientation.y = -1.0;
-        # orien_const.absolute_x_axis_tolerance = 0.02;
-        # orien_const.absolute_y_axis_tolerance = 0.02;
-        # orien_const.absolute_z_axis_tolerance = 0.02;
-        # orien_const.weight = 1.0;
-        # consts = Constraints()
-        # consts.orientation_constraints = [orien_const]
-        # left_arm.set_path_constraints(consts)
+        
 
         #WAYPOINTS
-        #make about 5 waypoints between baxters gripper position and goal state have planner move through all these points
         goal = Pose()
         goal.position.x = x2
         goal.position.y = y2
@@ -145,134 +133,172 @@ def follow(msg):
         goal3.orientation.x = 0.0
         goal3.orientation.y = -1.0
         goal3.orientation.z = 0.0
-        goal3.orientation.w = 0.0  
+        goal3.orientation.w = 0.0 
 
-        try:
-            ### Move end effector to 10 cm above target (fast motion with less waypoints) ###
-            '''waypoints = []
-            waypoints.append(goal)
-            (plan1, fraction) = left_arm.compute_cartesian_path(
-                                       waypoints,   # waypoints to follow with end 
-                                       0.01,        # eef_step
-                                       0.0)         # jump_threshold
-            #print "fraction: ", fraction
-            left_arm.execute(plan1)
-            rospy.sleep(3.0)'''
-            print("\nMoving to staging position before pick.")
-            pick_and_place(goal)
+        goal7 = Pose()
+        goal7.position.x = x2
+        goal7.position.y = y2
+        goal7.position.z = z2 + 0.10
+        goal7.orientation.x = 0.0
+        goal7.orientation.y = -1.0
+        goal7.orientation.z = 0.0
+        goal7.orientation.w = 0.0  
 
-            ######## Pick Up Object Once safely above ##############
-            #Precisely pick up object by increasing number of waypoints
+        roscpp_initialize(sys.argv)
+        robot = RobotCommander()
+        scene = PlanningSceneInterface()
+        left_arm = MoveGroupCommander('left_arm')
+        left_arm.set_planner_id('RRTConnectkConfigDefault')
+        left_arm.set_planning_time(10)
+        left_gripper = baxter_gripper.Gripper('left')
+        left_arm.allow_replanning(True)
+        left_arm.set_end_effector_link("left_gripper")
+        left_arm.set_pose_reference_frame('base')
+        left_gripper.set_vacuum_threshold(2.0)
 
-            '''waypoints = []
-            waypoints.append(goal)
-            (plan2, fraction) = left_arm.compute_cartesian_path(
-                                       waypoints,   # waypoints to follow with end 
-                                       0.01,        # eef_step
-                                       0.0)         # jump_threshold
-            print "fraction: ", fraction
-            left_arm.execute(plan2)
-            rospy.sleep(1.0)'''
-            print("prepare to grab domino.")
-            pick_and_place(goal2)
-            
-            '''waypoints = []
-            waypoints.append(goal3)
-            (plan3, fraction) = left_arm.compute_cartesian_path(
-                                       waypoints,   # waypoints to follow with end 
-                                       0.01,        # eef_step
-                                       0.0)         # jump_threshold
-            
-            ### Lift Object With suction gripper ###
-            print "fraction: ", fraction'''
+        print("current pose of eof: {}".format(left_arm.get_current_pose("left_gripper")))
 
-
-            print("\npicking up tag")
-            left_gripper.close(block=False)
-            print("\nvaccuum sensor reading: {}".format(left_gripper.vacuum_sensor()))
-            #rospy.sleep(0.5)
-            #left_arm.execute(plan3)
-            
-            rospy.sleep(0.5)
-            print("\nlifting tag")
-            pick_and_place(goal3)
-
-            #rotate the domino 180 degrees of current position about z axis of gripper
-            left_arm.set_pose_reference_frame("left_gripper")
-            goal5 = Pose()
-            goal5.position.x = x2
-            goal5.position.y = y2
-            goal5.position.z = z2 + 0.10
-            goal5.orientation.x = 0
-            goal5.orientation.y = 0
-            goal5.orientation.z = 0
-            goal5.orientation.w = 1.0
-
-            print("\nspinning domino in place")
-            pick_and_place(goal5)
-            left_arm.set_pose_reference_frame("base")
-
-
-            '''waypoints = []
-            waypoints.append(goal5)
-            (plan5, fraction) = left_arm.compute_cartesian_path(
-                                       waypoints,   # waypoints to follow with end 
-                                       0.01,        # eef_step
-                                       0.0)         # jump_threshold
-            print "fraction: ", fraction
-            left_arm.execute(plan5)
-            rospy.sleep(1.0)'''
-
-
-
-            #set the domino back down without dropping to avoid misplacement
-            print("\nsetting back down")
-            pick_and_place(goal4)
-
-            '''
-            waypoints = []
-            waypoints.append(goal4)
-            (plan4, fraction) = left_arm.compute_cartesian_path(
-                                       waypoints,   # waypoints to follow with end 
-                                       0.01,        # eef_step
-                                       0.0)         # jump_threshold
-            print "fraction: ", fraction
-            left_arm.execute(plan4)
-            rospy.sleep(1.0)
-            '''
-
-
-            print('Opening...')
-            left_gripper.open(block=True)
-            rospy.sleep(0.5)
-
-
-            print("\ngoing back to staging position for next pick")
-            pick_and_place(goal3)
-
-
-            '''waypoints = []
-            waypoints.append(goal3)
-            (plan6, fraction) = left_arm.compute_cartesian_path(
-                                       waypoints,   # waypoints to follow with end 
-                                       0.01,        # eef_step
-                                       0.0)         # jump_threshold
-            print "fraction: ", fraction
-            left_arm.execute(plan6)
-            rospy.sleep(1.0)
-            '''
-        except:
-            print("An error occurred. Stopping execution.")
-            left_arm.stop()
-            
-        print("done.")
+        #Create a path constraint for the arm
+        # UNCOMMENT TO ENABLE ORIENTATION CONSTRAINTS
+        #orien_const = moveit_msgs.msg.OrientationConstraint()
+        #orien_const.link_name = "left_gripper";
         
-        '''# Setting position and orientation target
-        group.set_pose_target(request.ik_request.pose_stamped)
-        # Setting just the position without specifying the orientation
-        #group.set_position_target([0.5, 0.0, 0.0])
-        # Plan IK and execute
-        group.go()'''
+        #orien_const.header.frame_id = "base";
+        #orien_const.orientation.y = -1.0;
+        #orien_const.absolute_x_axis_tolerance = 0.02;
+        #orien_const.absolute_y_axis_tolerance = 0.02;
+        #orien_const.absolute_z_axis_tolerance = 0.02;
+        #orien_const.weight = 1.0;
+        #consts = moveit_msgs.msg.Constraints()
+        #consts.orientation_constraints = [orien_const]
+        #left_arm.set_path_constraints(consts)
+
+        ### Move end effector to 10 cm above target (fast motion with less waypoints) ###
+        waypoints = []
+        waypoints.append(goal)
+        (plan1, fraction) = left_arm.compute_cartesian_path(
+                                   waypoints,   # waypoints to follow with end 
+                                   0.01,        # eef_step
+                                   0.0)         # jump_threshold
+        print "fraction: ", fraction
+        left_arm.execute(plan1)
+        rospy.sleep(3.0)
+
+        # goal1 = Pose()
+        # goal1.position.x = x2
+        # goal1.position.y = y2
+        # goal1.position.z = z2 + 0.10
+        # goal1.orientation.x = 
+        # goal1.orientation.y = 0.0
+        # goal1.orientation.z = 0.0
+        # goal1.orientation.w = 0.0
+        # waypoints = []
+        # waypoints.append(goal1)
+        # (plan11, fraction) = left_arm.compute_cartesian_path(
+        #                            waypoints,   # waypoints to follow with end 
+        #                            0.01,        # eef_step
+        #                            0.0)         # jump_threshold
+        # print "fraction: ", fraction
+        # left_arm.execute(plan11)
+        # rospy.sleep(3.0)
+
+
+        ######## Pick Up Object Once safely above ##############
+        #Precisely pick up object by increasing number of waypoints
+        
+        goal2 = Pose()
+        goal2.position.x = x2
+        goal2.position.y = y2
+        goal2.position.z = z2 + 0.005
+        goal2.orientation.x = 0.0
+        goal2.orientation.y = -1.0
+        goal2.orientation.z = 0.0
+        goal2.orientation.w = 0.0 
+
+        goal4 = goal2
+
+        waypoints = []
+        waypoints.append(goal2)
+        (plan2, fraction) = left_arm.compute_cartesian_path(
+                                   waypoints,   # waypoints to follow with end 
+                                   0.01,        # eef_step
+                                   0.0)         # jump_threshold
+        print "fraction2: ", fraction
+        left_arm.execute(plan2)
+        rospy.sleep(1.0)
+        
+        waypoints = []
+        waypoints.append(goal3)
+        (plan3, fraction) = left_arm.compute_cartesian_path(
+                                   waypoints,   # waypoints to follow with end 
+                                   0.01,        # eef_step
+                                   0.0)         # jump_threshold
+
+        ### Lift Object With suction gripper ###
+        print "fraction3: ", fraction
+        print("\npicking up tag")
+
+        
+        left_gripper.close(block=False)
+        print("\nvaccuum sensor reading: {}".format(left_gripper.vacuum_sensor()))
+        rospy.sleep(0.5)
+        left_arm.execute(plan3)
+        print("\nlifting tag")
+        rospy.sleep(1.0)
+
+
+        #rotate the domino 180 degrees of current position
+        print("current pose of eof: {}".format(left_arm.get_current_pose("left_gripper")))
+
+        goal5 = Pose()
+        goal5.position.x = x2
+        goal5.position.y = y2
+        goal5.position.z = z2 + 0.15
+        goal5.orientation.x = 0.0
+        goal5.orientation.y = -1.0
+        goal5.orientation.z = 0.0
+        goal5.orientation.w = 0.0
+                
+        print("\nspinning domino in place")
+        waypoints = []
+        waypoints.append(goal5)
+        (plan5, fraction5) = left_arm.compute_cartesian_path(
+                                   waypoints,   # waypoints to follow with end 
+                                   0.01,        # eef_step
+                                   0.0)         # jump_threshold
+        print "fraction5: ", fraction
+        left_arm.execute(plan5)
+        rospy.sleep(1.0)
+
+        #set the domino back down without dropping to avoid misplacement
+        print("\nsetting back down")
+        waypoints = []
+        waypoints.append(goal4)
+        (plan4, fraction) = left_arm.compute_cartesian_path(
+                                   waypoints,   # waypoints to follow with end 
+                                   0.01,        # eef_step
+                                   0.0)         # jump_threshold
+        print "fraction4: ", fraction
+        left_arm.execute(plan4)
+        rospy.sleep(1.0)
+        print('Opening...')
+        left_gripper.open(block=True)
+        rospy.sleep(0.5)
+
+        #go back to staging position
+        print("\ngoing back to staging position for next pick")
+        waypoints = []
+        waypoints.append(goal3)
+        (plan6, fraction) = left_arm.compute_cartesian_path(
+                                   waypoints,   # waypoints to follow with end 
+                                   0.01,        # eef_step
+                                   0.0)         # jump_threshold
+        print "fraction6: ", fraction
+        left_arm.execute(plan6)
+        rospy.sleep(1.0)
+
+
+        print("done.")
 
     rospy.signal_shutdown("Moved arm")
     
