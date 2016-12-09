@@ -3,7 +3,7 @@ import rospy
 import tf
 from tf2_msgs.msg import TFMessage
 import tf2_geometry_msgs
-from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import PoseStamped, Pose
 import ar_tag_pos as arp
 import numpy as np
 #from ../srv import Translate.srv #so service knows format of message type for callback
@@ -13,6 +13,7 @@ def handle_translate(coords):
 	Translate.srv format:
 
 	PoseStamped pose_stamped
+	String frame
 	---
 	PoseStamped output_pose_stamped
 
@@ -30,17 +31,22 @@ def handle_translate(coords):
     x = coords.pose_stamped.pose.position.x
     y = coords.pose_stamped.pose.position.y
     z = coords.pose_stamped.pose.position.z
+
+    frame = coords.frame
+    print "Frame to transform: ", frame
+
     input_coords = np.array([x,y,z,1])
 
     tf_listener = tf.TransformListener()
     found = False
+
     while not found:
 
     	try:
             #transform frame coords, so with respect to base frame 
             #note, can use ar tag frame, so that gripper will always be oriented correctly with the ar tag it is picking up
-            tf_listener.waitForTransform("base", "left_hand_camera_axis", rospy.Time(0), rospy.Duration(4.0))
-            transform = tf_listener.lookupTransform("base", "left_hand_camera_axis", rospy.Time(0))
+            tf_listener.waitForTransform("base", frame, rospy.Time(0), rospy.Duration(4.0))
+            transform = tf_listener.lookupTransform("base", frame, rospy.Time(0))
             (trans, rot) = transform
 
         except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
@@ -50,7 +56,7 @@ def handle_translate(coords):
         found = True
         rbt = arp.return_rbt(trans=trans, rot=rot)
         #transforms the entire pose, not just position
-        base_gripper_pose = tf2_geometry_msgs.do_transform_pose(coords.pose_stamped, transform)
+        base_gripper_pose_stamped = tf2_geometry_msgs.do_transform_pose(coords.pose_stamped, transform)
 
         #original method if above function doesn't work properly
         base_coords = rbt.dot(coords_cam_frame)
@@ -68,9 +74,9 @@ def handle_translate(coords):
 
         #if want new method, just uncomment line below and switch out:
 
-        #return base_gripper_pose
+        return base_gripper_pose_stamped
 
-        return return output_pose 
+        #return return output_pose 
 
 
 def translate_server():

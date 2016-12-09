@@ -83,6 +83,7 @@ def follow(msg):
         left_arm.allow_replanning(True)
         left_gripper.set_vacuum_threshold(2.0)
         left_arm.set_pose_reference_frame('base')
+        left_gripper.calibrate()
 
         #WAYPOINTS
         goal = Pose()
