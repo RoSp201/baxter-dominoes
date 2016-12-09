@@ -1,0 +1,35 @@
+<launch>
+	<!-- enable baxter before use -->
+	<arg name="en" default="-e" />
+	<node name="enable_robot" pkg="baxter_tools" type="enable_robot.py" arg="$(en)" />
+	<!-- end enable script -->
+</launch>
+
+<!--
+  <arg name="en" default="-e" />
+  <node name="enable_robot" pkg="baxter_tools" type="enable_robot.py" arg="--enable" />
+  <!-- end enable script -->
+
+  <!-- NOTE: MOVE TABLE AWAY FROM BAXTER DURING THIS STEP OR MAKE SURE ARMS WON'T HIT TABLE -->
+  
+  <!-- have baxter move into a better starting configuration -->
+  <arg name="un" default="-u" />
+  <node name="tuck_arms" pkg="baxter_tools" type="tuck_arms.py" arg="-u" />
+  <!-- end baxter arms config -->
+
+  <!-- arguments for calibrating left_hand_camera with baxter_tools package -->
+  <arg name="cl" default="--close" />
+  <arg name="head" default="head_camera" />
+  <arg name="start left" default="-o left_hand_camera" />
+  <arg name="res" default="-r 1280x800" />
+  <!--<node name="camera_control_close_head" pkg="baxter_tools" type="camera_control.py" arg=" -c head_camera" /> -->
+  <node name="camera_control_open_left" pkg="baxter_tools" type="camera_control.py" arg="-o left_hand_camera -r 1280x800" />
+  <!-- end of calibrating camera -->
+
+  <!-- launch rviz in separate terminal -->
+  <node name="rviz" pkg="rviz" output="screen" type="rviz" launch-prefix="xterm -e" />
+  <!-- end rviz launch -->
+
+  <!-- launch joint trajectory action server in serparate terminal -->
+  <node name="joint_trajectory_action_servery" pkg="baxter_interface" type="joint_trajectory_action_server.py" output="screen" launch-prefix="xterm -e" />
+  <!-- end args --> -->
