@@ -28,11 +28,12 @@ def handle_pick_n_place(msg):
     left_arm.set_end_effector_link("left_gripper")
     left_arm.set_pose_reference_frame('base')
 
-    #going to staging area above domino to be picked up, no rotation yet
+    
     x = msg.hand_domino.pose.position.x
     y = msg.hand_domino.pose.position.y
     z = msg.hand_domino.pose.position.z
 
+    #going to staging area above domino to be picked up, no rotation yet
     goal = Pose()
     goal.position.x = x
     goal.position.y = y
