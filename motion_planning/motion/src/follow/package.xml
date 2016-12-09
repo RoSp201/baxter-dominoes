@@ -41,6 +41,7 @@
   <!--   <test_depend>gtest</test_depend> -->
   <buildtool_depend>catkin</buildtool_depend>
   <build_depend>rospy</build_depend>
+  <build_depend>message_generation</build_depend>
   <build_depend>sensor_msgs</build_depend>
   <build_depend>std_msgs</build_depend>
   <build_depend>geometry_msgs</build_depend>
@@ -54,6 +55,7 @@
   <run_depend>ar_track_alvar_msgs</run_depend>
   <run_depend>tf2_msgs</run_depend>
   <run_depend>moveit_msgs</run_depend>
+  <run_depend>message_runtime</run_depend>
 
 
 

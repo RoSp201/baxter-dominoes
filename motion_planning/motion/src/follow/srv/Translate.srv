@@ -1,7 +1,3 @@
-float x
-float y
-float z
---
-float x
-float y
-float z
+PoseStamped pose_stamped
+---
+PoseStamped output_pose_stamped
