@@ -120,20 +120,30 @@ def follow(msg):
         goal.orientation.x = 0.0
         goal.orientation.y = -1.0
         goal.orientation.z = 0.0
-        goal.orientation.w = 0.0 
+        goal.orientation.w = 0.0
 
-        goal2 = goal
-        goal2.position.z = z2 + 0.005
-        goal4 = goal2
+        #goal2 = goal
+        #goal2.position.z = z2 + 0.005
+        #goal4 = goal2
 
         goal3 = Pose()
         goal3.position.x = x2
         goal3.position.y = y2
-        goal3.position.z = z2 + 0.20
+        goal3.position.z = z2 + 0.10
         goal3.orientation.x = 0.0
         goal3.orientation.y = -1.0
         goal3.orientation.z = 0.0
         goal3.orientation.w = 0.0 
+
+        goal6 = Pose()
+        goal6.position.x = x2
+        goal6.position.y = y2
+        goal6.position.z = z2 + 0.30
+        goal6.orientation.x = 1.0
+        goal6.orientation.y = -1.0
+        goal6.orientation.z = 0.0
+        goal6.orientation.w = 0.0 
+
 
         goal7 = Pose()
         goal7.position.x = x2
@@ -184,33 +194,14 @@ def follow(msg):
         left_arm.execute(plan1)
         rospy.sleep(3.0)
 
-        # goal1 = Pose()
-        # goal1.position.x = x2
-        # goal1.position.y = y2
-        # goal1.position.z = z2 + 0.10
-        # goal1.orientation.x = 
-        # goal1.orientation.y = 0.0
-        # goal1.orientation.z = 0.0
-        # goal1.orientation.w = 0.0
-        # waypoints = []
-        # waypoints.append(goal1)
-        # (plan11, fraction) = left_arm.compute_cartesian_path(
-        #                            waypoints,   # waypoints to follow with end 
-        #                            0.01,        # eef_step
-        #                            0.0)         # jump_threshold
-        # print "fraction: ", fraction
-        # left_arm.execute(plan11)
-        # rospy.sleep(3.0)
-
-
         ######## Pick Up Object Once safely above ##############
         #Precisely pick up object by increasing number of waypoints
         
         goal2 = Pose()
         goal2.position.x = x2
         goal2.position.y = y2
-        goal2.position.z = z2 + 0.005
-        goal2.orientation.x = 0.0
+        goal2.position.z = z2 + 0.01
+        goal2.orientation.x = 1.0
         goal2.orientation.y = -1.0
         goal2.orientation.z = 0.0
         goal2.orientation.w = 0.0 
@@ -251,10 +242,10 @@ def follow(msg):
         print("current pose of eof: {}".format(left_arm.get_current_pose("left_gripper")))
 
         goal5 = Pose()
-        goal5.position.x = x2
+        goal5.position.x = x2 + 0.10
         goal5.position.y = y2
-        goal5.position.z = z2 + 0.15
-        goal5.orientation.x = 0.0
+        goal5.position.z = z2 + 0.12
+        goal5.orientation.x = -1.0
         goal5.orientation.y = -1.0
         goal5.orientation.z = 0.0
         goal5.orientation.w = 0.0
@@ -273,6 +264,14 @@ def follow(msg):
         #set the domino back down without dropping to avoid misplacement
         print("\nsetting back down")
         waypoints = []
+        goal4 = Pose()
+        goal4.position.x = x2 
+        goal4.position.y = y2
+        goal4.position.z = z2 + 0.10
+        goal4.orientation.x = -1.0
+        goal4.orientation.y = -1.0
+        goal4.orientation.z = 0.0
+        goal4.orientation.w = 0.0
         waypoints.append(goal4)
         (plan4, fraction) = left_arm.compute_cartesian_path(
                                    waypoints,   # waypoints to follow with end 
@@ -288,10 +287,10 @@ def follow(msg):
         #go back to staging position
         print("\ngoing back to staging position for next pick")
         waypoints = []
-        waypoints.append(goal3)
+        waypoints.append(goal6)
         (plan6, fraction) = left_arm.compute_cartesian_path(
                                    waypoints,   # waypoints to follow with end 
-                                   0.01,        # eef_step
+                                   0.01,       # eef_step
                                    0.0)         # jump_threshold
         print "fraction6: ", fraction
         left_arm.execute(plan6)
