@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 import sys
-from math import pi
 import tf
 import rospy
 from tf2_msgs.msg import TFMessage
@@ -30,13 +29,7 @@ def pick_and_place(goal_pose, flip=False):
     rospy.sleep(3.0)
 
 
-
 def follow(msg):
-    
-    #Wait for the IK service to become available
-    #rospy.wait_for_service('compute_ik') 
-    #Create the function used to call the service
-    #compute_ik = rospy.ServiceProxy('compute_ik', GetPositionIK)
     
     marker = None
     for m in msg.markers:
@@ -53,13 +46,6 @@ def follow(msg):
 
     #collected coordinates are observered with respect to camera frame.
     coords_cam_frame = np.array([x1,y1,z1,1])
-
-    #Construct the request
-    #request = GetPositionIKRequest()
-    #request.ik_request.group_name = "left_arm"
-    #request.ik_request.ik_link_name = "left_gripper"
-    #request.ik_request.attempts = 30
-    #request.ik_request.pose_stamped.header.frame_id = "base" 
 
     tf_listener = tf.TransformListener()
     moved = False
@@ -97,20 +83,6 @@ def follow(msg):
         left_arm.allow_replanning(True)
         left_gripper.set_vacuum_threshold(2.0)
         left_arm.set_pose_reference_frame('base')
-
-        #Set the desired orientation for the end effector HERE
-        #request.ik_request.pose_stamped.pose.position.x = x2
-        #request.ik_request.pose_stamped.pose.position.y = y2
-        #request.ik_request.pose_stamped.pose.position.z = z2 + 0.20
-        #request.ik_request.pose_stamped.pose.orientation.x = 0.0
-        #request.ik_request.pose_stamped.pose.orientation.y = -1.0
-        #request.ik_request.pose_stamped.pose.orientation.z = 0.0
-        #request.ik_request.pose_stamped.pose.orientation.w = 0.0  
-
-        #response = compute_ik(request)
-        #group = MoveGroupCommander("left_arm")
-
-        
 
         #WAYPOINTS
         goal = Pose()
@@ -169,7 +141,6 @@ def follow(msg):
         print("current pose of eof: {}".format(left_arm.get_current_pose("left_gripper")))
 
         #Create a path constraint for the arm
-        # UNCOMMENT TO ENABLE ORIENTATION CONSTRAINTS
         #orien_const = moveit_msgs.msg.OrientationConstraint()
         #orien_const.link_name = "left_gripper";
         
@@ -214,32 +185,28 @@ def follow(msg):
                                    waypoints,   # waypoints to follow with end 
                                    0.01,        # eef_step
                                    0.0)         # jump_threshold
-        print "fraction2: ", fraction
+        print "fraction 2: ", fraction
         left_arm.execute(plan2)
         rospy.sleep(1.0)
         
+
+
         waypoints = []
         waypoints.append(goal3)
         (plan3, fraction) = left_arm.compute_cartesian_path(
                                    waypoints,   # waypoints to follow with end 
                                    0.01,        # eef_step
                                    0.0)         # jump_threshold
-
-        ### Lift Object With suction gripper ###
-        print "fraction3: ", fraction
-        print("\npicking up tag")
-
-        
+        print "fraction 3: ", fraction
+        print("\npicking up tag")        
         left_gripper.close(block=False)
-        print("\nvaccuum sensor reading: {}".format(left_gripper.vacuum_sensor()))
+        #print("\nvaccuum sensor reading: {}".format(left_gripper.vacuum_sensor()))
         rospy.sleep(0.5)
         left_arm.execute(plan3)
         print("\nlifting tag")
-        rospy.sleep(1.0)
+        rospy.sleep(2.0)
 
-
-        #rotate the domino 180 degrees of current position
-        print("current pose of eof: {}".format(left_arm.get_current_pose("left_gripper")))
+        #print("current pose of eof: {}".format(left_arm.get_current_pose("left_gripper")))
 
         goal5 = Pose()
         goal5.position.x = x2 + 0.10
@@ -255,14 +222,15 @@ def follow(msg):
         waypoints.append(goal5)
         (plan5, fraction5) = left_arm.compute_cartesian_path(
                                    waypoints,   # waypoints to follow with end 
-                                   0.01,        # eef_step
+                                   0.01,        # eef_step (can make 0 for no waypoints?)
                                    0.0)         # jump_threshold
-        print "fraction5: ", fraction
+        print "fraction 5: ", fraction
         left_arm.execute(plan5)
         rospy.sleep(1.0)
 
-        #set the domino back down without dropping to avoid misplacement
-        print("\nsetting back down")
+
+
+        print("\ngoing to place location")
         waypoints = []
         goal4 = Pose()
         goal4.position.x = x2 
@@ -277,14 +245,34 @@ def follow(msg):
                                    waypoints,   # waypoints to follow with end 
                                    0.01,        # eef_step
                                    0.0)         # jump_threshold
-        print "fraction4: ", fraction
+        print "fraction 4: ", fraction
         left_arm.execute(plan4)
         rospy.sleep(1.0)
-        print('Opening...')
-        left_gripper.open(block=True)
+
+        print("setting domino down into final position")
+        goal41 = Pose()
+        goal41.position.x = x2 
+        goal41.position.y = y2
+        goal41.position.z = z2 + 0.01
+        goal41.orientation.x = -1.0
+        goal41.orientation.y = -1.0
+        goal41.orientation.z = 0.0
+        goal41.orientation.w = 0.0
+        waypoints = []
+        waypoints.append(goal41)
+        (plan41, fraction) = left_arm.compute_cartesian_path(
+                                   waypoints,   # waypoints to follow with end 
+                                   0.01,        # eef_step
+                                   0.0)         # jump_threshold
+        print "fraction 4.1: ", fraction
+        left_arm.execute(plan41)
+        rospy.sleep(1.0)
+
+
+        print('Turning Off Suction.')
+        left_gripper.open(block=False)
         rospy.sleep(0.5)
 
-        #go back to staging position
         print("\ngoing back to staging position for next pick")
         waypoints = []
         waypoints.append(goal6)
@@ -292,11 +280,10 @@ def follow(msg):
                                    waypoints,   # waypoints to follow with end 
                                    0.01,       # eef_step
                                    0.0)         # jump_threshold
-        print "fraction6: ", fraction
+        
+        print "fraction 6: ", fraction
         left_arm.execute(plan6)
         rospy.sleep(1.0)
-
-
         print("done.")
 
     rospy.signal_shutdown("Moved arm")
