@@ -35,13 +35,14 @@ def handle_pick_n_place(msg):
 
     #going to staging area above domino to be picked up, no rotation yet
     goal = Pose()
-    goal.position.x = x
-    goal.position.y = y
-    goal.position.z = z + 0.10
-    goal.orientation.x = 0.0
+    goal = msg.hand_domino.pose
+    #goal.position.x = x
+    #goal.position.y = y
+    goal.position.z = z + 0.15
+    #goal.orientation.x = 0.0
     goal.orientation.y = -1.0
-    goal.orientation.z = 0.0
-    goal.orientation.w = 0.0
+    #goal.orientation.z = 0.0
+    #goal.orientation.w = 0.0
 
     #touch domino, no rotation yet
     goal2 = Pose()
@@ -69,7 +70,7 @@ def handle_pick_n_place(msg):
     #string checking comes in
     turn = 0
     goal4 = Pose()
-    goal4.position.x = msg.target_locagion.pose.position.x 
+    goal4.position.x = msg.target_location.pose.position.x 
     goal4.position.y = msg.target_location.pose.position.y
     goal4.position.z = z + 0.15
     
