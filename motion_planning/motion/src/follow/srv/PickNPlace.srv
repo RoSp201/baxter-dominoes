@@ -1,5 +1,5 @@
-Pose hand_domino
-Pose target_location
+PoseStamped hand_domino
+PoseStamped target_location
 String left_right
 ---
 

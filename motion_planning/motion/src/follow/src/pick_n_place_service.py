@@ -6,6 +6,14 @@ from baxter_interface import gripper as baxter_gripper
 import moveit_msgs.msg 
 
 def handle_pick_n_place(msg):
+    """
+    this is a service to help move dominoes to correct place position and orientation with respect to the board state
+    inputs: PickNPlace.srv
+        PoseStamped hand_domino
+        PoseStamped target_location
+    outputs: None
+
+    """
 
     #intialization information for compute cartesian path
     roscpp_initialize(sys.argv)
@@ -21,9 +29,9 @@ def handle_pick_n_place(msg):
     left_arm.set_pose_reference_frame('base')
 
     #going to staging area above domino to be picked up, no rotation yet
-    x = hand_domino.position.x
-    y = hand_domino.position.y
-    z = hand_domino.position.z
+    x = msg.hand_domino.pose.position.x
+    y = msg.hand_domino.pose.position.y
+    z = msg.hand_domino.pose.position.z
 
     goal = Pose()
     goal.position.x = x
@@ -60,14 +68,14 @@ def handle_pick_n_place(msg):
     #string checking comes in
     turn = 0
     goal4 = Pose()
-    goal4.position.x = msg.target_locagion.position.x 
-    goal4.position.y = msg.target_location.position.y
+    goal4.position.x = msg.target_locagion.pose.position.x 
+    goal4.position.y = msg.target_location.pose.position.y
     goal4.position.z = z + 0.15
     
     if left_right == "L":
-        turn = 1.0    
+        turn = 1.0    #rotate counter clockwise (positive radians)
     else:
-        turn = -1.0
+        turn = -1.0 #clockwise
     
     goal4.orientation.x = turn
     goal4.orientation.y = -1.0
@@ -76,8 +84,8 @@ def handle_pick_n_place(msg):
 
     #lowers gripper to place domino in final location, no rotation
     goal5 = Pose()
-    goal5.position.x = msg.target_location.position.x
-    goal5.position.y = msg.target_location.position.y
+    goal5.position.x = msg.target_location.pose.position.x
+    goal5.position.y = msg.target_location.pose.position.y
     goal5.position.z = z + 0.005
     goal5.orientation.x = turn
     goal5.orientation.y = -1.0
@@ -86,8 +94,8 @@ def handle_pick_n_place(msg):
 
     #raise gripper after placement, no rotation
     goal6 = Pose()
-    goal6.position.x = msg.target_location.position.x
-    goal6.position.y = msg.target_location.position.y
+    goal6.position.x = msg.target_location.pose.position.x
+    goal6.position.y = msg.target_location.pose.position.y
     goal6.position.z = z + 0.15
     goal6.orientation.x = turn
     goal6.orientation.y = -1.0
@@ -95,7 +103,7 @@ def handle_pick_n_place(msg):
     goal6.orientation.w = 0.0
 
     #move back to staging position in hand area, includes reset rotation
-    goal7 = hand_domino
+    goal7 = msg.hand_domino
     goal7.position.z = 0.25
 
     print("starting pose of eof: {}".format(left_arm.get_current_pose("left_gripper")))
@@ -187,7 +195,7 @@ def handle_pick_n_place(msg):
 def pick_n_place_server():
 
     rospy.init_node("pick_n_place_server")
-    s = rospy.Service("pick_n_place", PickNPlace, handle_pick_n_place)
+    s = rospy.Service("pick_n_place_server", PickNPlace, handle_pick_n_place)
     print "Ready to pick and place!"
     rospy.spin()
 
