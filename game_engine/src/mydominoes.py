@@ -12,6 +12,7 @@ from PickNPlace.srv import *
 from Translate.srv import *
 from DominoCordSrv.srv import *
 from ImageSrv.srv import *
+from follow.srv import *
 
 
 
@@ -83,8 +84,31 @@ class Player:
         self.move_domino(domino_to_move, move_to)
 
     def move_domino(self, domino_to_move, move_to):
-        move_to = unmade_translate_coords(move_to)
-        pick_and_place(domino_to_move.location, move_to)
+        #move_to must be a posed stamp object
+        #move_to = unmade_translate_coords(move_to)
+        #get domino transformed coordinates
+        #domino to move.location needs to be a poseStamped object
+        #third arg of pick_n_place is the direction that baxter needs to rotate the domino on the board.
+        
+        # tranform coordinates into base frame from left_hand_camera frame
+        rospy.wait_for_service("pose_translate_server")
+        trans_move_to = PoseStamped()
+        try:
+            translate = rospy.ServiceProxy("pose_translate_server", Translate)
+            trans_move_to = translate(move_to, 'left_hand_camera_axis')
+        except rospy.ServiceException, e:
+            print "Service call failed: %s" % e
+
+        # place the domino on the board.
+        rospy.wait_for_service("pick_n_place_server")
+        try:
+            left = "L"
+            pick_n_place = rospy.ServiceProxy("pick_n_place_server", PickNPlace)
+            response = pick_n_place(domino_to_move.location, trans_move_to, left)
+            return response
+        except rospy.ServiceException, e:
+            print "Service call failed: %s" % e
+
         # We don't have to add the domino to seen because we've already seen it in our hand.
         self.turns_taken += 1
 
