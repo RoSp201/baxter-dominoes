@@ -16,19 +16,6 @@ def handle_pick_n_place(msg):
     outputs: None
 
     """
-    #intialization information for compute cartesian path
-    roscpp_initialize(sys.argv)
-    robot = RobotCommander()
-    scene = PlanningSceneInterface()
-    left_arm = MoveGroupCommander('left_arm')
-    left_arm.set_planner_id('RRTConnectkConfigDefault')
-    left_arm.set_planning_time(10)
-    left_gripper = baxter_gripper.Gripper('left')
-    left_arm.allow_replanning(True)
-    left_gripper.set_vacuum_threshold(2.0)
-    left_arm.set_end_effector_link("left_gripper")
-    left_arm.set_pose_reference_frame('base')
-
     
     x = msg.hand_domino.pose.position.x
     y = msg.hand_domino.pose.position.y
@@ -79,7 +66,7 @@ def handle_pick_n_place(msg):
         turn = -1.0    #rotate counter clockwise (positive radians)
         turny = -1.0
     else:
-        turn = 1.0 #clockwise
+        turn = 1.0     #clockwise
         turny = 1.0
     
     goal4.orientation.x = turn
@@ -119,7 +106,8 @@ def handle_pick_n_place(msg):
                                waypoints,   # waypoints to follow with end 
                                0.01,        # eef_step
                                0.0)         # jump_threshold
-    print "fraction: ", fraction
+    print "fraction 1: ", fraction
+    print "going to staging area above domino to be picked up, no rotation yet"
     left_arm.execute(plan1)
     rospy.sleep(3.0)
 
@@ -130,6 +118,7 @@ def handle_pick_n_place(msg):
                                0.01,        # eef_step
                                0.0)         # jump_threshold
     print "fraction 2: ", fraction
+    print 'touch domino, no rotation yet'
     left_arm.execute(plan2)
     rospy.sleep(2.0)
     
@@ -141,6 +130,7 @@ def handle_pick_n_place(msg):
                                0.0)         # jump_threshold
     print "fraction 3: ", fraction
     print "Turning on Suction."
+    print "raise domino, no rotation yet"
     left_gripper.close(block=False)
     rospy.sleep(0.5)
     left_arm.execute(plan3)
@@ -153,6 +143,7 @@ def handle_pick_n_place(msg):
                                0.01,        # eef_step (can make 0 for no waypoints?)
                                0.0)         # jump_threshold
     print "fraction 4: ", fraction
+    print "domino should be placed and correct orientation"
     left_arm.execute(plan4)
     rospy.sleep(2.0)
 
@@ -164,6 +155,7 @@ def handle_pick_n_place(msg):
                                0.01,        # eef_step
                                0.0)         # jump_threshold
     print "fraction 5: ", fraction
+    print "lowers gripper to place domino in final location, no rotation"
     left_arm.execute(plan5)
     rospy.sleep(2.0)
 
@@ -178,6 +170,7 @@ def handle_pick_n_place(msg):
                                0.01,        # eef_step
                                0.0)         # jump_threshold
     print "fraction 6: ", fraction
+    print "raise gripper after placement, no rotation"
     left_arm.execute(plan6)
     rospy.sleep(1.0)
 
@@ -190,21 +183,36 @@ def handle_pick_n_place(msg):
                                0.0)         # jump_threshold
     
     print "fraction 7: ", fraction
+    print "move back to staging position in hand area, includes reset rotation"
     left_arm.execute(plan7)
     rospy.sleep(1.0)
-
-
     print("done.")
+
+
 
 def pick_n_place_server():
 
     rospy.init_node("pick_n_place_server")
     s = rospy.Service("pick_n_place_server", PickNPlace, handle_pick_n_place)
+
+    roscpp_initialize(sys.argv)
+    robot = RobotCommander()
+    scene = PlanningSceneInterface()
+    left_arm = MoveGroupCommander('left_arm')
+    left_arm.set_planner_id('RRTConnectkConfigDefault')
+    left_arm.set_planning_time(5.0)
+    left_gripper = baxter_gripper.Gripper('left')
+    left_arm.allow_replanning(True)
+    left_gripper.set_vacuum_threshold(2.0)
+    left_arm.set_end_effector_link("left_gripper")
+    left_arm.set_pose_reference_frame('base')
+
     print "\n\nPick_n_place Server Ready!\n"
     rospy.spin()
 
+
 if __name__ == '__main__':
-     pick_n_place_server()
+    pick_n_place_server()
 
 
 

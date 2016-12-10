@@ -15,7 +15,7 @@ from follow.srv import Translate, PickNPlace
 
 global target_tag
 
-def follow(msg):
+def test(msg):
     
     marker = None
     for m in msg.markers:
@@ -30,7 +30,7 @@ def follow(msg):
 
     while not moved:
 
-        print "Cam pose of AR tag: \n", marker.pose.pose
+        print "\nCamera pose of AR tag: \n", marker.pose.pose
 
         #TEST: Test new translate coordinates service for ar tag to base frame, returns transformed PoseStamped()
         rospy.wait_for_service("pose_translate_server")
@@ -38,11 +38,12 @@ def follow(msg):
         try:
             translate = rospy.ServiceProxy("pose_translate_server", Translate)
             resp = translate(marker.pose, 'left_hand_camera')
-            print "New Base pose of AR tag: ", resp.output_pose_stamped.pose
+            print "\nTransformed base pose of AR tag: \n", resp.output_pose_stamped.pose
+            rospy.sleep(1.0)
         except rospy.ServiceException, e:
             print "Service call failed: %s" % e
 
-
+        print "\n\nPASSED: Coordinate Transform service\n\n"
 
 
         moved = True
@@ -58,12 +59,11 @@ def follow(msg):
         left_arm.allow_replanning(True)
         left_gripper.set_vacuum_threshold(2.0)
         left_arm.set_pose_reference_frame('base')
-        #left_gripper.calibrate()
 
         #just general pose to place tag at for testing purposes
         goal_pose = PoseStamped()
         goal_pose.header.frame_id = "base"
-        goal_pose.pose.position.x = -0.5
+        goal_pose.pose.position.x = 0.75
         goal_pose.pose.position.y = 0.0
         goal_pose.pose.position.z = 0.10
         goal_pose.pose.orientation.x = 0.0
@@ -73,12 +73,9 @@ def follow(msg):
 
         start_pose = PoseStamped()
         start_pose = resp.output_pose_stamped
-        start_pose.pose.position.z += 0.005 #to make sure clears table initially
-        start_pose.pose.orientation.y = -1.0
-        start_pose.pose.orientation.x = -start_pose.pose.orientation.x
-
-        
-
+        #start_pose.pose.position.z += 0.005 #to make sure clears table initially
+        #start_pose.pose.orientation.y = -1.0
+        #start_pose.pose.orientation.x = -start_pose.pose.orientation.x
 
         #TEST: See if pick and place service works correctly
         rospy.wait_for_service("pick_n_place_server")
@@ -90,27 +87,25 @@ def follow(msg):
         except rospy.ServiceException, e:
             print "Service call failed: %s" % e
 
-
-
-
         rospy.sleep(1.0)
-        print("done.")
+        print("\n\nPASSED: pick_n_place_service call.")
+        print("\nexiting...")
     rospy.signal_shutdown("Moved arm")
     
 
-def listener():
+def test_pick_node():
 
     rospy.init_node("test_pick_node", anonymous=True)
-    rospy.Subscriber("ar_pose_marker", AlvarMarkers, follow)
+    rospy.Subscriber("ar_pose_marker", AlvarMarkers, test)
     rospy.spin()
 
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:
-        sys.exit('Use: test_pick_node.py [AR tag number for goal]')
+        sys.exit('Use: test_pick_node.py [AR tag number]')
     else:
         target_tag = int(sys.argv[1])
-        listener()
+        test_pick_node()
 
 
 

@@ -66,7 +66,7 @@ def handle_translate(coords):
         print "\nBase coordinates: ", x2, y2, z2
         
         output_pose_stamped = PoseStamped()
-        output_pose_stamped.header.frame_id = "base_gripper"
+        output_pose_stamped.header.frame_id = "base"
         output_pose_stamped.pose.position.x = x2
         output_pose_stamped.pose.position.y = y2
         output_pose_stamped.pose.position.z = z2

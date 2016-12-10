@@ -127,18 +127,6 @@ def follow(msg):
         goal7.orientation.z = 0.0
         goal7.orientation.w = 0.0  
 
-        roscpp_initialize(sys.argv)
-        robot = RobotCommander()
-        scene = PlanningSceneInterface()
-        left_arm = MoveGroupCommander('left_arm')
-        left_arm.set_planner_id('RRTConnectkConfigDefault')
-        left_arm.set_planning_time(10)
-        left_gripper = baxter_gripper.Gripper('left')
-        left_arm.allow_replanning(True)
-        left_arm.set_end_effector_link("left_gripper")
-        left_arm.set_pose_reference_frame('base')
-        left_gripper.set_vacuum_threshold(2.0)
-
         print("current pose of eof: {}".format(left_arm.get_current_pose("left_gripper")))
 
         #Create a path constraint for the arm
@@ -206,8 +194,6 @@ def follow(msg):
         left_arm.execute(plan3)
         print("\nlifting tag")
         rospy.sleep(2.0)
-
-        #print("current pose of eof: {}".format(left_arm.get_current_pose("left_gripper")))
 
         goal5 = Pose()
         goal5.position.x = x2 + 0.10
@@ -294,10 +280,7 @@ def listener():
 
     rospy.init_node("ik_from_ar_pos", anonymous=True)
     rospy.Subscriber("ar_pose_marker", AlvarMarkers, follow)
-
-    # spin() simply keeps python from exiting until this node is stopped
     rospy.spin()
-
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:
