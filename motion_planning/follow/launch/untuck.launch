@@ -1,0 +1,9 @@
+<launch>
+
+    <!-- NOTE: MOVE TABLE AWAY FROM BAXTER DURING THIS STEP OR MAKE SURE ARMS WON'T HIT TABLE -->
+
+    <!-- Places baxter's arms into a nice starting configuration -->
+    <arg name="untuck" default="-u" />
+    <node name="tuck_arms" pkg="baxter_tools" type="tuck_arms.py" arg="$(untuck)" />
+</launch>
+

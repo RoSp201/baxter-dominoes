@@ -1,0 +1,4 @@
+PoseStamped pose_stamped
+String frame
+---
+PoseStamped output_pose_stamped

@@ -1,4 +1,4 @@
-PoseStamped pose_stamped
-String frame
+geometry_msgs/PoseStamped pose_stamped
+std_msgs/String frame
 ---
-PoseStamped output_pose_stamped
+geometry_msgs/PoseStamped output_pose_stamped

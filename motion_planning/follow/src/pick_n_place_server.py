@@ -3,8 +3,7 @@ import rospy
 from geometry_msgs.msg import PoseStamped, Pose
 from moveit_commander import MoveGroupCommander, RobotCommander, roscpp_initialize, PlanningSceneInterface
 from baxter_interface import gripper as baxter_gripper
-import moveit_msgs.msg
-from follow.srv import PickNPlace 
+import moveit_msgs.msg 
 
 def handle_pick_n_place(msg):
     """
@@ -199,7 +198,7 @@ def pick_n_place_server():
 
     rospy.init_node("pick_n_place_server")
     s = rospy.Service("pick_n_place_server", PickNPlace, handle_pick_n_place)
-    print "\n\nReady to pick and place!\n"
+    print "Ready to pick and place!"
     rospy.spin()
 
 if __name__ == '__main__':

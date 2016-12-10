@@ -6,18 +6,18 @@ import tf2_geometry_msgs
 from geometry_msgs.msg import PoseStamped, Pose
 import ar_tag_pos as arp
 import numpy as np
-from follow.srv import Translate
+#from ../srv import Translate.srv #so service knows format of message type for callback
 
 def handle_translate(coords):
-    """
-    Translate.srv format:
+	"""
+	Translate.srv format:
 
-    PoseStamped pose_stamped
-    String frame
-    ---
-    PoseStamped output_pose_stamped
+	PoseStamped pose_stamped
+	String frame
+	---
+	PoseStamped output_pose_stamped
 
-    """
+	"""
     #this function will turn camera coordinates into base frame coordinates 
     #we can actually make the gripper orientation in terms of the ar tag frame orientation as seen by the base frame
     
@@ -26,7 +26,7 @@ def handle_translate(coords):
     #make sure two lines below are uncommented in package.xml
     #also add the same into CMakeList.txt
     #<build_depend>message_generation</build_depend>
-    #<run_depend>message_runtime</run_depend>
+  	#<run_depend>message_runtime</run_depend>
 
     x = coords.pose_stamped.pose.position.x
     y = coords.pose_stamped.pose.position.y
@@ -82,7 +82,7 @@ def handle_translate(coords):
 def translate_server():
     rospy.init_node("pose_translate_server")
     s = rospy.Service("pose_translate_server", Translate, handle_translate)
-    print "\n\nCoordinate translator server ready to use!\n\n" 
+    print "Coordinate translator server ready to use!" 
     rospy.spin()
 
 if __name__ == "__main__":

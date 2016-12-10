@@ -1,6 +1,6 @@
-PoseStamped hand_domino
-PoseStamped target_location
-String left_right
+geometry_msgs/PoseStamped hand_domino
+geometry_msgs/PoseStamped target_location
+std_msgs/String left_right
 ---
 
 
