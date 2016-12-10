@@ -10,7 +10,8 @@ from moveit_commander import MoveGroupCommander, RobotCommander, roscpp_initiali
 import numpy as np
 from ar_track_alvar_msgs.msg import AlvarMarkers
 from baxter_interface import gripper as baxter_gripper
-import moveit_msgs.msg 
+import moveit_msgs.msg
+from follow.srv import Translate, PickNPlace
 
 global target_tag
 
@@ -29,14 +30,14 @@ def follow(msg):
 
     while not moved:
 
-        print "Cam pose of AR tag: ", marker.pose.pose
+        print "Cam pose of AR tag: \n", marker.pose.pose
 
         #TEST: Test new translate coordinates service for ar tag to base frame, returns transformed PoseStamped()
         rospy.wait_for_service("pose_translate_server")
         resp = None
         try:
-            tag_to_base_pose = rospy.ServiceProxy("pose_translate_server", Translate)
-            resp = tag_to_base_pose(marker.pose, "ar_marker_"+str(target_tag))
+            translate = rospy.ServiceProxy("pose_translate_server", Translate)
+            resp = translate(marker.pose, 'left_hand_camera')
             print "New Base pose of AR tag: ", resp.output_pose_stamped.pose
         except rospy.ServiceException, e:
             print "Service call failed: %s" % e
@@ -57,14 +58,14 @@ def follow(msg):
         left_arm.allow_replanning(True)
         left_gripper.set_vacuum_threshold(2.0)
         left_arm.set_pose_reference_frame('base')
-        left_gripper.calibrate()
+        #left_gripper.calibrate()
 
         #just general pose to place tag at for testing purposes
         goal_pose = PoseStamped()
         goal_pose.header.frame_id = "base"
-        goal_pose.pose.position.x = 0.5
+        goal_pose.pose.position.x = -0.5
         goal_pose.pose.position.y = 0.0
-        goal_pose.pose.position.z = 0.25
+        goal_pose.pose.position.z = 0.10
         goal_pose.pose.orientation.x = 0.0
         goal_pose.pose.orientation.y = -1.0
         goal_pose.pose.orientation.z = 0.0
@@ -72,8 +73,9 @@ def follow(msg):
 
         start_pose = PoseStamped()
         start_pose = resp.output_pose_stamped
-        start_pose.pose.position.z += 0.15 #to make sure clears table initially
+        start_pose.pose.position.z += 0.005 #to make sure clears table initially
         start_pose.pose.orientation.y = -1.0
+        start_pose.pose.orientation.x = -start_pose.pose.orientation.x
 
         
 

@@ -55,10 +55,11 @@ def follow(msg):
         print "Cam coordinates: ", x1, y1, z1
         try:
             #transform frame coords, so with respect to base frame
-            tf_listener.waitForTransform("base", "left_hand_camera_axis", rospy.Time(0), rospy.Duration(4.0))
-            (trans, rot) = tf_listener.lookupTransform("base", "left_hand_camera_axis", rospy.Time(0))
+            tf_listener.waitForTransform("base", "ar_marker_1", rospy.Time(0), rospy.Duration(4.0))
+            (trans, rot) = tf_listener.lookupTransform("base", "ar_maker_1", rospy.Time(0))
 
         except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
+            print "error"
             continue
 
         moved = True
@@ -83,7 +84,6 @@ def follow(msg):
         left_arm.allow_replanning(True)
         left_gripper.set_vacuum_threshold(2.0)
         left_arm.set_pose_reference_frame('base')
-        left_gripper.calibrate()
 
         #WAYPOINTS
         goal = Pose()
@@ -111,8 +111,8 @@ def follow(msg):
         goal6 = Pose()
         goal6.position.x = x2
         goal6.position.y = y2
-        goal6.position.z = z2 + 0.30
-        goal6.orientation.x = 1.0
+        goal6.position.z = z2 + 0.12
+        goal6.orientation.x = 0.0
         goal6.orientation.y = -1.0
         goal6.orientation.z = 0.0
         goal6.orientation.w = 0.0 
@@ -172,8 +172,8 @@ def follow(msg):
         goal2 = Pose()
         goal2.position.x = x2
         goal2.position.y = y2
-        goal2.position.z = z2 + 0.01
-        goal2.orientation.x = 1.0
+        goal2.position.z = z2 + 0.005
+        goal2.orientation.x = 0.0
         goal2.orientation.y = -1.0
         goal2.orientation.z = 0.0
         goal2.orientation.w = 0.0 
@@ -212,7 +212,7 @@ def follow(msg):
         goal5 = Pose()
         goal5.position.x = x2 + 0.10
         goal5.position.y = y2
-        goal5.position.z = z2 + 0.12
+        goal5.position.z = z2 + 0.10
         goal5.orientation.x = -1.0
         goal5.orientation.y = -1.0
         goal5.orientation.z = 0.0
@@ -254,7 +254,7 @@ def follow(msg):
         goal41 = Pose()
         goal41.position.x = x2 
         goal41.position.y = y2
-        goal41.position.z = z2 + 0.01
+        goal41.position.z = z2 + 0.005
         goal41.orientation.x = -1.0
         goal41.orientation.y = -1.0
         goal41.orientation.z = 0.0

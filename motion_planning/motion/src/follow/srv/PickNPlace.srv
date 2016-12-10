@@ -1,6 +1,6 @@
 geometry_msgs/PoseStamped hand_domino
 geometry_msgs/PoseStamped target_location
-std_msgs/String left_right
+string left_right
 ---
 
 
