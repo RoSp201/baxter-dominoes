@@ -16,7 +16,6 @@ def handle_pick_n_place(msg):
     outputs: None
 
     """
-
     #intialization information for compute cartesian path
     roscpp_initialize(sys.argv)
     robot = RobotCommander()
@@ -37,12 +36,11 @@ def handle_pick_n_place(msg):
 
     #going to staging area above domino to be picked up, no rotation yet
     goal = Pose()
-    goal = msg.hand_domino.pose
-    #goal.position.x = x
-    #goal.position.y = y
+    goal.position.x = x
+    goal.position.y = y
     goal.position.z = z + 0.10
     goal.orientation.x = 0.0
-    goal.orientation.y = 1.0
+    goal.orientation.y = -1.0
     goal.orientation.z = 0.0
     goal.orientation.w = 0.0
 
@@ -52,7 +50,7 @@ def handle_pick_n_place(msg):
     goal2.position.y = y
     goal2.position.z = z + 0.005
     goal2.orientation.x = 0.0
-    goal2.orientation.y = 1.0
+    goal2.orientation.y = -1.0
     goal2.orientation.z = 0.0
     goal2.orientation.w = 0.0 
 
@@ -62,27 +60,30 @@ def handle_pick_n_place(msg):
     goal3 = Pose()
     goal3.position.x = x
     goal3.position.y = y
-    goal3.position.z = z + 0.15
+    goal3.position.z = z + 0.10
     goal3.orientation.x = 0.0
-    goal3.orientation.y = 1.0
+    goal3.orientation.y = -1.0
     goal3.orientation.z = 0.0
     goal3.orientation.w = 0.0 
 
     #make this goal next to where the domino should be placed and correct orientation
     #string checking comes in
     turn = 0
+    turny = 0
     goal4 = Pose()
     goal4.position.x = msg.target_location.pose.position.x 
     goal4.position.y = msg.target_location.pose.position.y
     goal4.position.z = z + 0.10
     
     if msg.left_right == "L":
-        turn = 1.0    #rotate counter clockwise (positive radians)
+        turn = -1.0    #rotate counter clockwise (positive radians)
+        turny = -1.0
     else:
-        turn = -1.0 #clockwise
+        turn = 1.0 #clockwise
+        turny = 1.0
     
     goal4.orientation.x = turn
-    goal4.orientation.y = -1.0
+    goal4.orientation.y = turny
     goal4.orientation.z = 0.0
     goal4.orientation.w = 0.0 
 
@@ -92,7 +93,7 @@ def handle_pick_n_place(msg):
     goal5.position.y = msg.target_location.pose.position.y
     goal5.position.z = z + 0.005
     goal5.orientation.x = turn
-    goal5.orientation.y = 1.0
+    goal5.orientation.y = turny
     goal5.orientation.z = 0.0
     goal5.orientation.w = 0.0  
 
@@ -102,17 +103,15 @@ def handle_pick_n_place(msg):
     goal6.position.y = msg.target_location.pose.position.y
     goal6.position.z = z + 0.10
     goal6.orientation.x = turn
-    goal6.orientation.y = 1.0
+    goal6.orientation.y = turny
     goal6.orientation.z = 0.0
     goal6.orientation.w = 0.0
 
-    print("got here.")
-
     #move back to staging position in hand area, includes reset rotation
     goal7 = msg.hand_domino.pose
-    goal7.position.z = 0.15
+    goal7.position.z = z + 0.10
 
-    print("starting pose of eof: {}".format(left_arm.get_current_pose("left_gripper")))
+    print("\nstarting pose of eof: {}".format(left_arm.get_current_pose("left_gripper")))
 
     waypoints = []
     waypoints.append(goal)
@@ -132,7 +131,7 @@ def handle_pick_n_place(msg):
                                0.0)         # jump_threshold
     print "fraction 2: ", fraction
     left_arm.execute(plan2)
-    rospy.sleep(1.0)
+    rospy.sleep(2.0)
     
     waypoints = []
     waypoints.append(goal3)
@@ -155,7 +154,7 @@ def handle_pick_n_place(msg):
                                0.0)         # jump_threshold
     print "fraction 4: ", fraction
     left_arm.execute(plan4)
-    rospy.sleep(1.0)
+    rospy.sleep(2.0)
 
 
     waypoints = []
@@ -166,7 +165,7 @@ def handle_pick_n_place(msg):
                                0.0)         # jump_threshold
     print "fraction 5: ", fraction
     left_arm.execute(plan5)
-    rospy.sleep(1.0)
+    rospy.sleep(2.0)
 
     print('Turning Off Suction.')
     left_gripper.open(block=False)
@@ -201,7 +200,7 @@ def pick_n_place_server():
 
     rospy.init_node("pick_n_place_server")
     s = rospy.Service("pick_n_place_server", PickNPlace, handle_pick_n_place)
-    print "\n\nReady to pick and place!\n"
+    print "\n\nPick_n_place Server Ready!\n"
     rospy.spin()
 
 if __name__ == '__main__':
