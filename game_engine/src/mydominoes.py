@@ -1,16 +1,26 @@
 #!/usr/bin/env python2
 
 #TODO: lots of imports to call local services, as well as be a node.
+import sys
+import rospy
+from geometry_msgs import Pose, Point, Quaternion
+#For the head nod:
+import baxter_interface
+
+#Our services:
+from PickNPlace.srv import *
+from Translate.srv import *
+from DominoCordSrv.srv import *
+from ImageSrv.srv import *
+
 
 
 """Currently, this is an OOP skeleton that we should put the ROS in.
 CTRL+F your name in all caps for anything I asked you to do.
 """
 
-
-
 # Constants to figure out
-VERT_VERT_OFFSET = 69694206969
+VERT_VERT_OFFSET = 0xb00dee
 HORIZ_VER_OFFSET = 1337
 HAND_SPACE_OFFSET = 0xdaddb0dd
 
@@ -24,33 +34,39 @@ class Player:
 
     def game_init(self):
         #Find hand AR tag and populate both seen and hand with the dominoes in our hand.
-        pass
-        self.hand_base = unmade_get_hand_base
+        self.scan_for_dominoes()
+        for domino in self.seen():
+
+
 
     def pick_from_boneyard(self):
         """Wait for a player to give us a domino"""
-        # Make baxter signal that he can't make a move, probably with a nod or a cute audio file.
+        # Make baxter signal that he can't make a move by nodding.
+        baxter_interface.Head().command_nod()
         domino = self.get_next_domino()
         hand.append(domino)
         hand_coords = self.hand_base
-        # This assumes that Baxter-s hand starts in the closest-left corner of the table and it grows to the right.
-        hand_coords[1] = hand_coords[1] + len(hand) * HAND_SPACE_OFFSEt
-        self.move_domino(domino, self.hand_base - (0, 
+        # This assumes that Baxter's hand starts in the closest-left corner of the table and it grows to the right.
+        hand_coords.y = hand_coords[1] + len(hand) * HAND_SPACE_OFFSEt
+        #TODO: move domino
 
     def game_loop(self):
         game_ended = False
         self.game_init()
         while not game_ended:
             while not self.seen % 4 == 0:
-                self.get_next_domino()
+                newdoms = self.get_next_domino()
                 ## Make a move:
-                self.turns_taken += 1
+                self.turns_taken += len(newdoms)
                 if not self.turns_taken % 4:
-                    self.make_move()
+                    self.take_turn()
 
-    def make_move(self):
+    def take_turn(self):
+        """Analyze the previously sensed board state and make the best greedy move if it exists.
+        If it doesn't, pick from the boneyard but nodding to the players and waiting for a new tile
+        to move into the hand area."""
         # Compute the move to get:
-        open_spots = self.root.get_open_spots
+        open_spots = self.root.get_open_spots([])
         assert(open_spots)
         move = self.best_move_greedy(self.hand, self.open_spots)
         if move[0] == -1:
@@ -61,33 +77,42 @@ class Player:
         domino_to_move = self.hand[move[0]]
         domino_to_move_to = open_spots[move[1]]
         if move[2] == "bottom":
-            #ROBERT: figure out the logic on these spins, and make an IK service to call them.
             unmade_spin_domino()
         move_to = domino_to_move_to.get_location_from_domino(move[3])
+        #ROBERT: change the domino coordinates to the world coordinates
         self.move_domino(domino_to_move, move_to)
 
     def move_domino(self, domino_to_move, move_to):
-        #ROBERT: change the domino coordinates to the world coordinates
         move_to = unmade_translate_coords(move_to)
         pick_and_place(domino_to_move.location, move_to)
         # We don't have to add the domino to seen because we've already seen it in our hand.
         self.turns_taken += 1
 
-    def get_next_domino(self):
+    def scan_for_dominoes(self, num_dominoes = 0):
+        """Finds all new dominoes currently detectable and enforces that we see no more than num_dominoes new ones.
+        A value of zero indicates that any number of new dominoes is allowed."""
         while 1:
             ## Find new dominoes:
             # TODO HENRY:
             dominoes = CV_SENSE
-            newdom = None
+            newdoms = []
             for domino in dominoes:
-                convert_CV_to_domino
-                if not domino.pips in seen:
-                    #If we're sensing multiple turns taken, we're doing something wrong.
-                    if newdom:
-                        raise Exception
-                    newdom = domino
+                # Convert the domino pips to our notation:
+                pips = (max(domino[0], domino[1], min(domino[0], domino[1])))
+                if not pips in seen:
+                    orientation = domino[3]
+                    orientation_obj = convert_orientation_to_object #This is pseudocoded out because we don't know the specifics of the scan yet.
+                    pose_obj = get_pose_from_domino #this is pseudocoded out because we don't know the specifics of the CV return values yet.
+                    new_domino = Domino(pose_obj, orientation_obj)
+                    newdoms.append(domino)
                     seen.add(domino.pips)
-            return newdom
+            # Make sure that we're not too off the mark on how many new dominoes we should have.
+            if num_dominoes and len(newdoms) > num_dominoes:
+                raise Exception
+            return newdoms
+
+    def get_next_domino(self):
+        return self.scan_for_dominoes(1)
 
     def CV_sense(self):
         # TODO: HENRY:
@@ -96,11 +121,14 @@ class Player:
         # We need this information for each domino:
         # num pips, orientation, corresponding AR tag
         # (position on the screen is OK if we can find functionality to get that AR tag, but that seems like kind of a toss-up)
+        # ROBERT: This also where we should perform our scan, so start thinking on the kinematics to make sure that we seethe whole board.
+        # Currently, the init function uses this alongside the play function. We might want to have a separate scan for reading our hand.
+        # Just an idea, if you get moving scans working and you want to compartmentalize.
         pass
 
     def best_move_greedy(hand, open_spots):
         hiscore = 0
-        best_play = (-1, -1, "ERR", "ERR") #Position in hand, position in open_spots, side of the moving domino, side of the stationary domino
+        best_play = (-1, -1, "ERR", "ERR", "none") #Position in hand, position in open_spots, side of the moving domino, side of the stationary domino, which way to rotate.
         for spot in range(len(open_spots)):
             for i in range(len(hand)):
                 curr = hand[i]
@@ -124,10 +152,11 @@ class Player:
 
 # Class for keeping board state:
 class Domino:
-    def __init__(self, pips, location):
+    def __init__(self, pips, pose):
         # The syntax for pips is (top pip, bottom pip)
         self.pips = pips
         self.sides = {"top": None, "bottom": None, "left": None, "right": None}
+        self.pose = pose
 
     def place(self, otherdom, pos):
         """ Places otherdom at this domino's pos"""
@@ -135,20 +164,20 @@ class Domino:
         self.sides[pos] = otherdom
         otherdom.sides["bottom"] = self
 
-    def get_open_spots(self):
+    def get_open_spots(self, seen):
         """Currently, we're operating on a simplified domino model wherein dominoes can only be in a line.
         This just translates to finding the ends of a linked list."""
         top = self.sides["top"]
         bottom = self.sides["bottom"]
-        #TODO: remember how to recursion
-        if top:
+        if top and not top in seen:
             spots.append(top.get_open_spots()[0])
         else:
             spots.append(self.pips[0])
-        if bottom:
+        if bottom and not bottom in seen:
             spots.append(bottom.get_open_spots()[1])
         else:
             spots.append(self.pips[1])
+        return spots
 
     def score(self):
         """Returns the sum of the pips on a domino.
