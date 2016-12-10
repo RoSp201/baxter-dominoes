@@ -93,13 +93,16 @@ class Player:
         # tranform coordinates into base frame from left_hand_camera frame
         rospy.wait_for_service("pose_translate_server")
         trans_move_to = PoseStamped()
+        print "try to transform coordinates"
         try:
             translate = rospy.ServiceProxy("pose_translate_server", Translate)
             trans_move_to = translate(move_to, 'left_hand_camera_axis')
         except rospy.ServiceException, e:
             print "Service call failed: %s" % e
+        print "coordinates successfully transformed."
 
         # place the domino on the board.
+        print "try to place domino"
         rospy.wait_for_service("pick_n_place_server")
         try:
             left = "L"
@@ -108,6 +111,7 @@ class Player:
             return response
         except rospy.ServiceException, e:
             print "Service call failed: %s" % e
+        print "domino placed successfully."
 
         # We don't have to add the domino to seen because we've already seen it in our hand.
         self.turns_taken += 1
