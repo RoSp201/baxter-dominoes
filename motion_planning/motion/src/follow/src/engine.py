@@ -35,6 +35,7 @@ TAGS_TO_PIPS = {
                 11: (4, 2),
                 12: (5, 2),
                 13: (4, 3),
+                14: (6, 1),
                 15: (6, 2),
                 16: (5, 3),
                 17: (6, 3),
@@ -43,6 +44,7 @@ TAGS_TO_PIPS = {
                 20: (6, 4),
                 31: (0, 0),
                 }
+
 TABLE_CENTER = [0.6, .4]
 
 
@@ -194,7 +196,7 @@ class Player:
             dominoes = self.call_scan()
             newdoms = []
             for domino in dominoes:
-                if domino not in list(self.seen) and domino.tag <= 31:
+                if domino not in list(self.seen):
                     print(domino.tag)
                     newdoms.append(domino)
                     self.seen[domino.tag] = domino
@@ -216,7 +218,6 @@ class Player:
         for i in range(len(tags)):
             dominoes.append(Domino(TAGS_TO_PIPS[tags[i]], tags[i], positions[i]))
         return dominoes
-
 
     def blatnerize(self):
         rospy.wait_for_service("scan_server")

@@ -10,7 +10,9 @@ from follow.srv import *
 
 
 # Table dimensions in meters
-dim = np.array([0.5, 1])
+# TODO: use the first dim when not debugging
+#dim = np.array([0.5, 1])
+dim = np.array([0.25, .5])
 # x and y FOV
 fov = np.array([0.20, 0.20])
 # Number of lengthwise scans of table
