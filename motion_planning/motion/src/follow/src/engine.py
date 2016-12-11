@@ -307,15 +307,15 @@ class Domino:
         This just translates to finding the ends of a linked list."""
         top = self.sides["top"]
         bottom = self.sides["bottom"]
-        spots = [0, 0]
+        spots = []
         if top and top not in seen:
-            spots[0] = top.get_open_spots(seen)[0]
+            spots.append(top.get_open_spots(seen))
         else:
-            spots[0] = (self, "top")
+            spots.append((self, "top"))
         if bottom and bottom not in seen:
-            spots[1] = bottom.get_open_spots(seen)[1]
+            spots.append(bottom.get_open_spots(seen))
         else:
-            spots[1] = (self, "bottom")
+            spots.append((self, "bottom"))
         return spots
 
     def find_domino(self, pips):
