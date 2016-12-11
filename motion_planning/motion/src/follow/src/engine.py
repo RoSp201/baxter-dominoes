@@ -41,7 +41,7 @@ class Player:
         print "Scanning for the hand"
         # Find hand AR tag and populate both seen and hand with the dominoes in our hand.
         self.scan_for_dominoes()
-        self.hand_coords = self.seen[HAND_AR_NUM]
+        self.hand_coords = self.seen[HAND_AR_NUM].pose
         # Take away the root hand tag when we're constructing the list
         del self.seen[HAND_AR_NUM]
         self.hand = self.seen.values()
@@ -49,8 +49,8 @@ class Player:
         for domino in self.hand:
             hand_coords = copy.deepcopy(self.hand_coords)
             hand_coords.position.y -= i * HAND_SPACE_OFFSET
-            self.move_domino(domino, hand_hand_coords)
-        #self.seen[HAND_AR_NUM] = self.hand_coords
+            self.move_domino(domino, hand_coords)
+        self.seen[HAND_AR_NUM] = self.hand_coords
         print "Scanning for the root"
         self.root = self.get_next_domino()
 
@@ -145,7 +145,7 @@ class Player:
         else:
             return "R"
 
-    def move_domino(self, domino_to_move, move_to, rot=0):
+    def move_domino(self, domino_to_move, move_to, rot=""):
         #move_to must be a posed stamp object
         #move_to = unmade_translate_coords(move_to)
         #get domino transformed coordinates
@@ -156,7 +156,13 @@ class Player:
         rospy.wait_for_service("pick_n_place_server")
         try:
             pick_n_place = rospy.ServiceProxy("pick_n_place_server", PickNPlace)
-            response = pick_n_place(domino_to_move.location, move_to, rot)
+            p = PoseStamped()
+            p.pose = domino_to_move.pose
+            p.pose.orientation.y = -1.0
+            p2 = PoseStamped()
+            p2.pose = move_to
+            p2.pose.orientation.y = -1.0
+            response = pick_n_place(p, p2, rot)
             return response
         except rospy.ServiceException, e:
             print "Service call failed: %s" % e
@@ -174,10 +180,12 @@ class Player:
             newdoms = []
             for domino in dominoes:
                 if domino not in list(self.seen) and domino.tag <= 31:
+                    print(domino.tag)
                     newdoms.append(domino)
                     self.seen[domino.tag] = domino
             # Make sure that we're not too off the mark on how many new dominoes we should have.
             if num_dominoes and len(newdoms) > num_dominoes:
+                print "{} dominoes expected but {} dominoes found.".format(num_dominoes, len(newdoms))
                 raise Exception
             return newdoms
 
