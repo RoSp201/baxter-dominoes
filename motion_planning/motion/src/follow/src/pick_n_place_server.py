@@ -193,8 +193,7 @@ def handle_pick_n_place(msg):
 def pick_n_place_server():
 
     rospy.init_node("pick_n_place_server")
-    s = rospy.Service("pick_n_place_server", PickNPlace, handle_pick_n_place)
-
+    
     roscpp_initialize(sys.argv)
     robot = RobotCommander()
     scene = PlanningSceneInterface()
@@ -207,6 +206,9 @@ def pick_n_place_server():
     left_arm.set_end_effector_link("left_gripper")
     left_arm.set_pose_reference_frame('base')
 
+    s = rospy.Service("pick_n_place_server", PickNPlace, handle_pick_n_place)
+
+    
     print "\n\nPick_n_place Server Ready!\n"
     rospy.spin()
 

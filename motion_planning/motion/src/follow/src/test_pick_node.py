@@ -71,9 +71,7 @@ def test(msg):
 
         start_pose = PoseStamped()
         start_pose = resp.output_pose_stamped
-        #start_pose.pose.position.z += 0.005 #to make sure clears table initially
-        #start_pose.pose.orientation.y = -1.0
-        #start_pose.pose.orientation.x = -start_pose.pose.orientation.x
+        start_pose.pose.position.z += 0.10 
 
         #TEST: See if pick and place service works correctly
         rospy.wait_for_service("pick_n_place_server")

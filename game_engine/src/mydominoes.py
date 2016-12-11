@@ -21,22 +21,25 @@ CTRL+F your name in all caps for anything I asked you to do.
 """
 
 # Constants to figure out
-VERT_VERT_OFFSET = 0xb00dee
-HORIZ_VER_OFFSET = 1337
-HAND_SPACE_OFFSET = 0xdaddb0dd
+VERT_VERT_OFFSET = .13
+HORIZ_VER_OFFSET = 0xdaddb0dd
+HAND_SPACE_OFFSET = .03
+NUM_PLAYERS = 2
 
 class Player:
     def __init__(self, hand, root):
-        self.hand = hand
-        self.root = root
+        self.hand = hand # array of domino objects
+        self.root = root # Domino representing the spinner
         self.turns_taken = 0
-        self.seen = []
+        self.seen = [] # Domino objects for dominos we've seen
         self.game_init()
 
     def game_init(self):
         #Find hand AR tag and populate both seen and hand with the dominoes in our hand.
         self.scan_for_dominoes()
-        for domino in self.seen():
+        # TODO: initialize the hand_base
+        # TODO: scan full reachable workspace for table dimensions.
+        for domino in self.seen:
 
 
 
@@ -44,23 +47,24 @@ class Player:
         """Wait for a player to give us a domino"""
         # Make baxter signal that he can't make a move by nodding.
         baxter_interface.Head().command_nod()
+        rospy.sleep(5)
         domino = self.get_next_domino()
         hand.append(domino)
         hand_coords = self.hand_base
         # This assumes that Baxter's hand starts in the closest-left corner of the table and it grows to the right.
-        hand_coords.y = hand_coords[1] + len(hand) * HAND_SPACE_OFFSEt
+        hand_coords.y = hand_coords[1] + len(hand) * HAND_SPACE_OFFSET
         #TODO: move domino
 
     def game_loop(self):
         game_ended = False
         self.game_init()
         while not game_ended:
-            while not self.seen % 4 == 0:
+            while not self.turns_taken % NUM_PLAYERS == 0:
                 newdoms = self.get_next_domino()
-                ## Make a move:
-                self.turns_taken += len(newdoms)
-                if not self.turns_taken % 4:
-                    self.take_turn()
+            ## Make a move:
+            self.turns_taken += len(newdoms)
+            if not self.turns_taken % NUM_PLAYERS:
+                self.take_turn()
 
     def take_turn(self):
         """Analyze the previously sensed board state and make the best greedy move if it exists.
@@ -89,7 +93,6 @@ class Player:
         #get domino transformed coordinates
         #domino to move.location needs to be a poseStamped object
         #third arg of pick_n_place is the direction that baxter needs to rotate the domino on the board.
-        
         # tranform coordinates into base frame from left_hand_camera frame
         rospy.wait_for_service("pose_translate_server")
         trans_move_to = PoseStamped()
@@ -133,7 +136,7 @@ class Player:
                     pose_obj = get_pose_from_domino #this is pseudocoded out because we don't know the specifics of the CV return values yet.
                     new_domino = Domino(pose_obj, orientation_obj)
                     newdoms.append(domino)
-                    seen.add(domino.pips)
+                    seen.add(domino)
             # Make sure that we're not too off the mark on how many new dominoes we should have.
             if num_dominoes and len(newdoms) > num_dominoes:
                 raise Exception
@@ -154,7 +157,7 @@ class Player:
         # Just an idea, if you get moving scans working and you want to compartmentalize.
         pass
 
-    def best_move_greedy(hand, open_spots):
+    def best_move_greedy(self, hand, open_spots):
         hiscore = 0
         best_play = (-1, -1, "ERR", "ERR", "none") #Position in hand, position in open_spots, side of the moving domino, side of the stationary domino, which way to rotate.
         for spot in range(len(open_spots)):
@@ -200,6 +203,21 @@ class Domino:
         if top and not top in seen:
             spots.append(top.get_open_spots()[0])
         else:
+    def find_domino(self, pips):
+        if self.pips == pips:
+            return self
+        else:
+
+    def get_location_to_move_to(self, side):
+        """Returns the offset from this domino's origin to apply to a domino if placing it at side side, specified in this domino's reference frame."""
+        if "side" == "top":
+            return (VERT_VERT_OFFSET, 0 0)
+        if "side" == "bottom":
+            return (-VERT_VERT_OFFSET, 0, 0)
+        if "side" == "left":
+            return (0, HORIZ_VERT_OFFSET, 0)
+        if "side" == "right":
+            return (0, -HORIZ_VERT_OFFSET, 0)
             spots.append(self.pips[0])
         if bottom and not bottom in seen:
             spots.append(bottom.get_open_spots()[1])
