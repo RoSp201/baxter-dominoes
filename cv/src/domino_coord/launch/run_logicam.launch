@@ -12,7 +12,7 @@
     <param name="io_method" value="mmap" />
   </node>
 
-  <arg name="marker_size" default="2.18" />
+  <arg name="marker_size" default="5" />
   <arg name="max_new_marker_error" default="0.1" />
   <arg name="max_track_error" default="0.1" />
   <arg name="cam_image_topic" default="/usb_cam/image_raw" />
