@@ -46,12 +46,14 @@ TAGS_TO_PIPS = {
                 }
 
 TABLE_CENTER = [0.6, .4]
+DUMMY_SCANS = [((31, 0), [Pose(), Pose()]), ((2),[Pose()])]
 
 
 class Player:
     def __init__(self):
         self.turns_taken = 0
         self.seen = {}  # Domino objects for dominos we've seen
+        self.scan_idx = 0
         self.game_init()
 
     def game_init(self):
@@ -184,6 +186,7 @@ class Player:
         baxter_interface.Head().command_nod()
 
     def move_domino(self, domino_to_move, move_to, rot=""):
+        return
         #move_to must be a posed stamp object
         #move_to = unmade_translate_coords(move_to)
         #get domino transformed coordinates
@@ -206,6 +209,8 @@ class Player:
         except rospy.ServiceException, e:
             print "Service call failed: %s" % e
         print "domino placed successfully."
+
+        # We don't have to add the domino to seen because we've already seen it in our hand.
 
     def scan_for_dominoes(self, num_dominoes = 0):
         """Finds all new dominoes currently detectable and enforces that we see no more than num_dominoes new ones.
@@ -244,17 +249,9 @@ class Player:
         return dominoes
 
     def blatnerize(self):
-        rospy.wait_for_service("scan_server")
-        print "try to do a scan"
-        try:
-            scan = rospy.ServiceProxy("scan_server", Scan, persistent=True)
-            response = scan(TABLE_CENTER)
-            tag_numbers, tag_poses = response.tagNumbers, response.arTagPoses
-            print "Scan returned {} and {}".format(tag_numbers, tag_poses)
-        except rospy.ServiceException, e:
-            print "Service call failed: %s" % e
-        print "Scan successful."
-        return tag_numbers, tag_poses
+        temp = DUMMY_SCANS[self.scan_idx]
+        self.scan_idx += 1
+        return temp
 
     def best_move_greedy(self, hand, open_spots):
         hiscore = 0
