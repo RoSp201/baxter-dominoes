@@ -10,15 +10,17 @@ from follow.srv import *
 
 
 # Table dimensions in meters
-dim = np.array([0.5, .75])
+dim = np.array([0.5, 1])
 # x and y FOV
-fov = np.array([0.35, 0.35])
+fov = np.array([0.2, 0.2])
 # Number of lengthwise scans of table
 n_scans = np.ceil(dim/fov).astype(int)
 nx, ny = n_scans
 # Space between lengthwise scans
 scan_spacing = dim/n_scans
 dx, dy = scan_spacing
+print n_scans
+print scan_spacing
 
 # Constant scan height above the table
 z0 = 0.1
@@ -36,25 +38,30 @@ translate_server = None
 raw_tags = defaultdict(list) # tag number: [(confidence, Position, Orientation), ...]
 # Once a tag in raw_tags has a count of REQUIRED_COUNT, it's added to seen_tags
 REQUIRED_COUNT = 3
+MAX_SCANS = REQUIRED_COUNT+2
 seen_tags = dict() # tag number: Pose
 # Counts scans completed at any one location
 scan_counter = 0
 # Synchronization for scanning and moving
 scan_cv = Condition()
+scan_call_in_progress = False
 
 
 def hold_scan():
     # Enters with cv acquired
-    global scan_counter
+    global scan_counter, scan_call_in_progress
     scan_counter = 0
-    while scan_counter < REQUIRED_COUNT*1.5:
+    scan_call_in_progress = True
+    while scan_counter < MAX_SCANS:
         # Release lock and block
-        print('Scan counter is only at:',scan_counter)
+        print 'waiting...'
         scan_cv.wait()
+        print 'waited'
         # Wait returns with lock acquired
     # Exits with cv acquired
-    print('Tags seen:')
-    print(seen_tags)
+    print seen_tags
+    print 'Finished one location'
+    scan_call_in_progress = False
 
 
 def handle_scan(request):
@@ -77,9 +84,9 @@ def handle_scan(request):
     """
     print('Scanning from service...')
     scan_cv.acquire()
+    print 'Lock acquired'
     origin = np.array(request.tableCenter)
     x0, y0 = origin - (dim/2)
-    print(dx, dy)
 
     # Move Baxter's camera to the front right corner of the table
     next_point = Point(x0, y0, z0)
@@ -87,6 +94,7 @@ def handle_scan(request):
     next_pose = Pose(next_point, next_quat)
     move_to_position(next_pose)
 
+    raw_tags.clear()
     seen_tags.clear()
 
     direction = 1
@@ -102,19 +110,17 @@ def handle_scan(request):
             #### next_pose = Pose(next_point, next_quat)
             move_to_position(next_pose)
         hold_scan()
-        print seen_tags
 
         # Then move horizontally across the table
         for iy_scan in range(ny-1):
             next_pose.position.y += direction*dy
             move_to_position(next_pose)
             hold_scan()
-            print seen_tags
 
         direction *= -1
 
-    # Converts seen_tags dictionary to [(1, 2, ...), (Pose1, Pose2, ...)]
     scan_cv.release()
+    # Converts seen_tags dictionary to [(1, 2, ...), (Pose1, Pose2, ...)]
     return zip(*seen_tags.items())
 
 
@@ -132,13 +138,14 @@ def ar_tag_filter(msg):
     geometry_msgs/PoseStamped pose
     """
     # Only scan when scanner is calling hold_scan()
-    if not scan_cv.acquire(blocking=False):
+    global scan_counter
+    if ((MAX_SCANS <= scan_counter) or (not scan_call_in_progress)
+        or (not scan_cv.acquire(blocking=False))):
         return
 
     # Extract useful information, and exclude tags that already passed the filter
     current_tags = [(marker.id, marker.pose) for marker in msg.markers if marker.id not in seen_tags]
     if current_tags:
-        print('Tags found')
         current_tag_ids = set(zip(*current_tags)[0])
         # Remove tags from raw dict that aren't seen this round
         for old_tag_id in raw_tags.keys():
@@ -154,19 +161,20 @@ def ar_tag_filter(msg):
             # If pose seen enough times, average pose information and add to seen_tags
             if len(tag_list) == REQUIRED_COUNT:
                 positions, orientations = zip(*tag_list)
-                filt_point = Point(
-                    np.mean([(pos.x, pos.y, pos.z) for pos in positions], axis=0)
+                avg_pos = np.mean(
+                    np.array([(pos.x, pos.y, pos.z) for pos in positions]),
+                    axis=0
                 )
-                filt_quat = Quaternion(
-                    np.mean([(quat.x, quat.y, quat.z, quat.w) for quat in orientations], axis=0)
+                filt_point = Point(*avg_pos)
+                avg_quat = np.mean(
+                    np.array([(quat.x, quat.y, quat.z, quat.w) for quat in orientations]),
+                    axis=0
                 )
+                filt_quat = Quaternion(*avg_quat)
                 seen_tags[tag_id] = Pose(filt_point, filt_quat)
                 del raw_tags[tag_id]
-    else:
-        print('No tags found')
-    global scan_counter
     scan_counter += 1
-    print('Scan counter now is:',scan_counter)
+    print 'Scan counter now is:',scan_counter
     scan_cv.notify()
     scan_cv.release()
 
@@ -178,7 +186,6 @@ def move_to_position(goal_pose):
         0.0             # jump_threshold
     )
     left_arm.execute(plan)
-    rospy.sleep(1)
 
 
 def init_motion():
@@ -203,7 +210,7 @@ def scan_server():
     init_filter()
     init_motion()
     rospy.Service('scan_server', Scan, handle_scan)
-    print('\n\Scan server ready!\n\n')
+    print('\nScan server ready!\n\n')
     rospy.spin()
 
 

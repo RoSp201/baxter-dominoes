@@ -5,7 +5,7 @@ import rospy
 from follow.srv import Scan
 
 
-table_center = [0.7, 0]
+table_center = [0.75, .4]
 
 
 def test_scan_server():
@@ -13,8 +13,11 @@ def test_scan_server():
 	rospy.wait_for_service('scan_server')
 	perform_scan = rospy.ServiceProxy('scan_server', Scan, persistent=True)
 	# test_request = Scan(table_center)
-	print('Performing scan...')
-	perform_scan(table_center)
+	print 'Performing scan...'
+	response = perform_scan(table_center)
+	tag_numbers, tag_poses = response.tagNumbers, response.arTagPoses
+	print 'Done with scan.'
+	print tag_numbers
 
 
 if __name__ == '__main__':
