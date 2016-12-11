@@ -46,12 +46,12 @@ TAGS_TO_PIPS = {
                 }
 
 TABLE_CENTER = [0.6, .4]
-DUMMY_SCANS = [((31, 0), [Pose(), Pose()]), ((2),[Pose()])]
+DUMMY_SCANS = [((31, 0, 5), [Pose(), Pose(), Pose()]), ([2],[Pose()])]
 
 
 class Player:
     def __init__(self):
-        self.turns_taken = 0
+        self.turns_taken = 1
         self.seen = {}  # Domino objects for dominos we've seen
         self.scan_idx = 0
         self.game_init()
@@ -74,13 +74,13 @@ class Player:
         self.seen[HAND_AR_NUM] = temp
         print "Scanning for the spinner"
         self.spinner = self.get_next_domino()
-        self.turns_taken += 1
+        print("TURNS TAKEN: {}".format(self.turns_taken))
         self.game_loop()
 
     def pick_from_boneyard(self):
         """Wait for a player to give us a domino"""
         # Make baxter signal that he can't make a move by nodding.
-        baxter_interface.Head().command_nod()
+        print "nod"
         rospy.sleep(5)
         domino = None
         while not domino:
@@ -102,7 +102,8 @@ class Player:
     def game_loop(self):
         game_ended = False
         while not game_ended:
-            while not self.turns_taken % NUM_PLAYERS == 0:
+            while self.turns_taken % NUM_PLAYERS == 0:
+                print "Waiting for dominoes"
                 rospy.sleep(5)
                 newdoms = self.scan_for_dominoes()
                 for newdom in newdoms:
@@ -130,7 +131,7 @@ class Player:
                     # We have a new turn for each new domino we see.
                     self.turns_taken += 1
 
-            if not self.turns_taken % NUM_PLAYERS:
+            if self.turns_taken % NUM_PLAYERS:
                 print "Taking turn"
                 self.take_turn()
 
@@ -141,7 +142,7 @@ class Player:
         # Compute the move to get:
         open_spots = self.spinner.get_open_spots([])
         assert(open_spots)
-        move = self.best_move_greedy(self.hand, self.open_spots)
+        move = self.best_move_greedy(self.hand, open_spots)
         if move[0] == -1:
             # If we can't find a move, we draw.
             self.pick_from_boneyard()
@@ -149,25 +150,26 @@ class Player:
             return
         domino_to_move = self.hand[move[0]]
         domino_to_move_to = open_spots[move[1]]
+        print("MOVE {}".format(move))
         # Calculate which direction to rotate the domino.
-        LR = domino_to_move_to.get_domino_direction()
+        LR = domino_to_move_to[0].get_domino_direction()
         rot = ""
         # If the domino with the open spot has its X axis pointing left:
         if LR == "L":
-            if move[3] == "bottom" and move[4] == "top" or\
-                    move[3] == "top" and move[4] == "bottom":
+            if move[2] == "bottom" and move[3] == "top" or\
+                    move[2] == "top" and move[3] == "bottom":
                 rot = "L"
             else:
                 rot = "R"
         # If the domino with the open spot has its X axis pointing right:
         if LR == "R":
-            if move[3] == "bottom" and move[4] == "top" or\
-                    move[3] == "top" and move[4] == "bottom":
+            if move[2] == "bottom" and move[3] == "top" or\
+                    move[2] == "top" and move[3] == "bottom":
                 rot = "R"
             else:
                 rot = "L"
 
-        move_to = domino_to_move_to.get_location_from_domino(move[3])
+        move_to = domino_to_move_to[0].get_location_to_move_to(move[2])
 #        rospy.wait_for_service("translate_server")
 #        trans_move_to = PoseStamped()
 #        print "try to transform coordinates"
@@ -177,13 +179,12 @@ class Player:
 #        except rospy.ServiceException, e:
 #            print "Service call failed: %s" % e
 
-        self.move_domino(domino_to_move, _move_to, rot)
-        domino_to_move.sides[move[3]] = domino_to_move_to
-        domino_to_move_to.sides[move[4]] = domino_to_move
+        self.move_domino(domino_to_move, move_to, rot)
+        domino_to_move.sides[move[2]] = domino_to_move_to
+        domino_to_move_to[0].sides[move[3]] = domino_to_move
         self.turns_taken += 1
         print "Take turn successful"
-        baxter_interface.Head().command_nod()
-        baxter_interface.Head().command_nod()
+        print "2nod"
 
     def move_domino(self, domino_to_move, move_to, rot=""):
         return
@@ -254,25 +255,27 @@ class Player:
         return temp
 
     def best_move_greedy(self, hand, open_spots):
-        hiscore = 0
+        hiscore = -1
         #Position in hand, position in open_spots, side of the moving domino, side of the stationary domino
         best_play = (-1, -1, "ERR", "ERR")
         for spot in range(len(open_spots)):
             for i in range(len(hand)):
+                print(open_spots[spot][0])
                 curr = hand[i]
-                currscore= score(curr)
+                print(curr.pips)
+                currscore = curr.score()
                 if currscore < hiscore:
                     continue
-                if curr[0] == open_spots[spot][0]:
+                if curr.pips[0] == open_spots[spot][0].pips[0]:
                     hiscore = currscore
                     best_play = (i, spot, "top", "top")
-                elif curr[0] == open_spots[spot][1]:
+                elif curr.pips[0] == open_spots[spot][0].pips[1]:
                     hiscore = currscore
                     best_play = (i, spot, "top", "bottom")
-                elif curr[1] == open_spots[spot][0]:
+                elif curr.pips[1] == open_spots[spot][0].pips[0]:
                     hiscore = currscore
                     best_play = (i, spot, "bottom", "top")
-                elif curr[1] == open_spots[spot][1]:
+                elif curr.pips[1] == open_spots[spot][0].pips[1]:
                     hiscore = currscore
                     best_play = (i, spot, "bottom", "bottom")
         return best_play
@@ -306,13 +309,14 @@ class Domino:
         bottom = self.sides["bottom"]
         spots = [0, 0]
         if top and top not in seen:
-            spots[0] = (top.get_open_spots(seen)[0])
+            spots[0] = top.get_open_spots(seen)[0]
         else:
-            spots[0] = ((self,"top"))
+            spots[0] = (self, "top")
         if bottom and bottom not in seen:
-            spots[0] = (bottom.get_open_spots(seen)[1])
+            spots[1] = bottom.get_open_spots(seen)[1]
         else:
-            spots[0] = ((self,"bottom"))
+            spots[1] = (self, "bottom")
+        print "SPOTS: {} {}".format(spots[0][0].pips, spots[1][0].pips)
         return spots
 
     def find_domino(self, pips):
