@@ -3,15 +3,11 @@
 import sys
 import copy
 import rospy
-from geometry_msgs import PoseStamped, Pose, Point, Quaternion
+from geometry_msgs.msg import PoseStamped, Pose, Point, Quaternion
 # For the head nod:
 import baxter_interface
 
 # Our services:
-from PickNPlace.srv import *
-from Translate.srv import *
-from DominoCordSrv.srv import *
-from ImageSrv.srv import *
 from follow.srv import *
 
 """Currently, this is an OOP skeleton that we should put the ROS in.
@@ -31,12 +27,11 @@ TAGS_TO_PIPS = {15:  (6, 2),
                 10: (5, 1),
                 20: (6, 4),
                 17: (6, 3)}
+TABLE_CENTER = [0.6, .4]
 
 
 class Player:
-    def __init__(self, hand, root):
-        self.hand = hand  # array of domino objects
-        self.root = root  # Domino representing the spinner
+    def __init__(self):
         self.turns_taken = 0
         self.seen = {}  # Domino objects for dominos we've seen
         self.game_init()
@@ -147,7 +142,6 @@ class Player:
         #get domino transformed coordinates
         #domino to move.location needs to be a poseStamped object
         #third arg of pick_n_place is the direction that baxter needs to rotate the domino on the board.
-
         # place the domino on the board.
         print "try to place domino"
         rospy.wait_for_service("pick_n_place_server")
@@ -188,14 +182,23 @@ class Player:
 
     def call_scan(self):
         # TODO: call the new scan service, and put the returned poses into domino objects.
-        (tags, positions) = blatnerize()
+        (tags, positions) = self.blatnerize()
         dominoes = []
         for i in len(tags):
             dominoes.append(Domino(TAGS_TO_PIPS[tags[i]], tags[i], positions[i]))
 
 
     def blatnerize(self):
-        return (1, 1)
+        rospy.wait_for_service("scan_server")
+        print "try to do a scan"
+        try:
+            scan = rospy.ServiceProxy("scan_server", Scan, persistent=True)
+            respscan = scan(table_center)
+            tag_numbers, tag_poses = response.tagNumbers, response.arTagPoses
+        except rospy.ServiceException, e:
+            print "Service call failed: %s" % e
+        print "Scan successful."
+        return (tag_numbers, tag_poses)
 
     def best_move_greedy(self, hand, open_spots):
         hiscore = 0
@@ -288,3 +291,6 @@ class Domino:
             temp.position.y += VERT_VERT_OFFSET
         if "side" == "right":
             temp.position.y -= VERT_VERT_OFFSET
+
+
+Player()
