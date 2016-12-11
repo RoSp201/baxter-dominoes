@@ -1,0 +1,13 @@
+# Request to scan table for Dominoes
+# x0,y0 coordinates of front right corner of table
+# Note that left is positve y and forward is positive x
+#          x
+#    ______^
+#   |      |
+#   |______|
+# y<       ^=(x0, y0)
+#
+uint32[] tableOrigin
+---
+uint32[] tagNumbers
+geometry_msgs/Pose[] arTagPoses
