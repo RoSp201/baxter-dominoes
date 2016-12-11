@@ -199,6 +199,7 @@ def move_to_position(goal_pose):
         0.0             # jump_threshold
     )
     left_arm.execute(plan)
+    rospy.sleep(0.5) #add this to see if baxter's action trajectory server will stop complaining about reaching max velocity threshold during scan.
 
 
 def init_motion():
