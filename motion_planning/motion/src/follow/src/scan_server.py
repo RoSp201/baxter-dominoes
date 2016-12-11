@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 from collections import defaultdict
 from threading import Condition
-
+from moveit_commander import MoveGroupCommander, RobotCommander, roscpp_initialize, PlanningSceneInterface
 import numpy as np
 import rospy
 from geometry_msgs.msg import Pose, Point, Quaternion
-
-from follow.srv import Scan
+from ar_track_alvar_msgs.msg import AlvarMarkers
+from follow.srv import *
 
 
 # Table dimensions in meters
@@ -14,7 +14,7 @@ dim = np.array([0.4, 0.6])
 # x and y FOV
 fov = np.array([0.15, 0.15])
 # Number of lengthwise scans of table
-n_scans = np.ceil(dim/fov)
+n_scans = int(np.ceil(dim/fov))
 nx, ny = n_scans
 # Space between lengthwise scans
 scan_spacing = dim/n_scans
@@ -27,7 +27,7 @@ z0 = 0.25
 left_arm = None
 
 # translate_service proxy
-translate_pose = None
+translate_server = None
 
 
 # Continuously populated dictionary of seen AR tags
@@ -122,36 +122,38 @@ def ar_tag_filter(msg):
     geometry_msgs/PoseStamped pose
     """
     # Only scan when scanner is calling hold_scan()
-    if not scan_cv.acquire(blocking=false):
+    if not scan_cv.acquire(blocking=False):
         return
 
     # Extract useful information, and exclude tags that already passed the filter
     current_tags = [(marker.id, marker.confidence, marker.pose) for marker in msg.markers if marker.id not in seen_tags]
-    current_tag_ids = set(zip(*current_tags)[0])
-    # Remove tags from raw dict that aren't seen this round
-    for old_tag_id in raw_tags.keys():
-        if old_tag_id not in current_tag_ids:
-            del raw_tags[old_tag_id]
-    # Add all poses seen
-    for marker in current_tags:
-        tag_id, confidence, pose = marker.id, marker.confidence, marker.pose
-        pose = translate_server(pose, 'base').pose
-        tag_list = raw_tags[tag_id]
-        tag_list.append((confidence, pose.pose.position, pose.pose.Orientation))
-        # If pose seen enough times, average pose information and add to seen_tags
-        if len(tag_list) == REQUIRED_COUNT:
-            confidences, positions, orientations = zip(*tag_list)
-            total_confidence = sum(confidences)
-            filt_point = Point(
-                np.average([(pos.x, pos.y, pos.z) for pos in positions],
-                           axis=0, weights=confidences)
-            )
-            filt_quat = Quaternion(
-                np.average([(quat.x, quat.y, quat.z, quat.w) for quat in orientations],
-                           axis=0, weights=confidences)
-            )
-            seen_tags[tag_id] = Pose(filt_point, filt_quat)
-            del raw_tags[tag_id]
+    if current_tags: 
+        current_tag_ids = set(zip(*current_tags)[0])
+        # Remove tags from raw dict that aren't seen this round
+        for old_tag_id in raw_tags.keys():
+            if old_tag_id not in current_tag_ids:
+                del raw_tags[old_tag_id]
+        # Add all poses seen
+        for (tag_id, confidence, pose) in current_tags:
+            if confidence < 0.01:
+                continue
+            pose = translate_server(pose, 'base').output_pose_stamped
+            tag_list = raw_tags[tag_id]
+            tag_list.append((confidence, pose.pose.position, pose.pose.orientation))
+            # If pose seen enough times, average pose information and add to seen_tags
+            if len(tag_list) == REQUIRED_COUNT:
+                confidences, positions, orientations = zip(*tag_list)
+                total_confidence = sum(confidences)
+                filt_point = Point(
+                    np.average([(pos.x, pos.y, pos.z) for pos in positions],
+                               axis=0, weights=confidences)
+                )
+                filt_quat = Quaternion(
+                    np.average([(quat.x, quat.y, quat.z, quat.w) for quat in orientations],
+                               axis=0, weights=confidences)
+                )
+                seen_tags[tag_id] = Pose(filt_point, filt_quat)
+                del raw_tags[tag_id]
     global scan_counter
     scan_counter += 1
     scan_cv.release()
@@ -178,16 +180,16 @@ def init_motion():
     left_arm.set_pose_reference_frame('base')
 
 def init_filter():
-    global translate_pose
+    global translate_server
     rospy.wait_for_service('translate_server')
-    translate_pose = rospy.ServiceProxy('translate_server', Translate, persistent=True)
-    rospy.init_node('ar_tag_filter', anonymous=True)
+    translate_server = rospy.ServiceProxy('translate_server', Translate, persistent=True)
+    #rospy.init_node('ar_tag_filter', anonymous=True)
     rospy.Subscriber('ar_pose_marker', AlvarMarkers, ar_tag_filter)
 
 def scan_server():
+    rospy.init_node('scan_server')
     init_filter()
     init_motion()
-    rospy.init_node('scan_server')
     rospy.Service('scan_server', Scan, handle_scan)
     print('\n\Scan server ready!\n\n')
     rospy.spin()
