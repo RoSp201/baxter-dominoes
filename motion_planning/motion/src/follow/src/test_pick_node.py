@@ -46,24 +46,12 @@ def follow(msg):
 
         moved = True
 
-        #intialization information for computer cartesian path
-        roscpp_initialize(sys.argv)
-        robot = RobotCommander()
-        scene = PlanningSceneInterface()
-        left_arm = MoveGroupCommander('left_arm')
-        left_arm.set_planner_id('RRTConnectkConfigDefault')
-        left_arm.set_planning_time(10)
-        left_gripper = baxter_gripper.Gripper('left')
-        left_arm.allow_replanning(True)
-        left_gripper.set_vacuum_threshold(2.0)
-        left_arm.set_pose_reference_frame('base')
-
         #just general pose to place tag at for testing purposes
         goal_pose = PoseStamped()
         goal_pose.header.frame_id = "base"
-        goal_pose.pose.position.x = 0.75
+        goal_pose.pose.position.x = 0.5
         goal_pose.pose.position.y = 0.0
-        goal_pose.pose.position.z = 0.20
+        goal_pose.pose.position.z = 0.0
         goal_pose.pose.orientation.x = 0.0
         goal_pose.pose.orientation.y = -1.0
         goal_pose.pose.orientation.z = 0.0
@@ -71,12 +59,11 @@ def follow(msg):
 
         start_pose = PoseStamped()
         start_pose = resp.output_pose_stamped
-        #start_pose.pose.position.z 
 
         #TEST: See if pick and place service works correctly
         rospy.wait_for_service("pick_n_place_server")
         try:
-            left = "L"
+            left = "R"
             pick_n_place = rospy.ServiceProxy("pick_n_place_server", PickNPlace)
             response = pick_n_place(start_pose, goal_pose, left)
             return response

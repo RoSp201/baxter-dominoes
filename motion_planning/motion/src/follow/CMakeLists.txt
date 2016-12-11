@@ -9,6 +9,7 @@ find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
   rospy
   std_msgs
+  sensor_msgs
   message_generation
 )
 
@@ -58,6 +59,8 @@ add_service_files(
   PickNPlace.srv
   Translate.srv
   Scan.srv
+  DominoCoordSrv.srv
+  ImageSrv.srv
 )
 
 ## Generate actions in the 'action' folder
@@ -70,7 +73,9 @@ add_service_files(
 ## Generate added messages and services with any dependencies listed here
 generate_messages(
   DEPENDENCIES
-  geometry_msgs#   std_msgs
+  geometry_msgs
+  std_msgs
+  sensor_msgs
 )
 
 ################################################
@@ -105,7 +110,7 @@ generate_messages(
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES follow
-#  CATKIN_DEPENDS geometry_msgs rospy roscpp std_msgs message_runtime
+#  CATKIN_DEPENDS geometry_msgs rospy roscpp std_msgs sensor_msgs message_runtime
 #  DEPENDS system_lib
 )
 

@@ -3,7 +3,7 @@
   <!-- Copyright © 2016 Robert Spark. All rights reserved. -->
 
   <!-- arguments for running ar_track_alvar package -->
-  <arg name="marker_size" default="2.0" />
+  <arg name="marker_size" default="1.96" />
   <arg name="max_new_marker_error" default="0.08" />
   <arg name="max_track_error" default="0.2" />
   <arg name="cam_image_topic" default="/cameras/left_hand_camera/image" />

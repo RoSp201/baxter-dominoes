@@ -37,7 +37,7 @@ def handle_pick_n_place(msg):
     goal2 = Pose()
     goal2.position.x = x
     goal2.position.y = y
-    goal2.position.z = z + 0.005
+    goal2.position.z = z + 0.003
     goal2.orientation.x = 0.0
     goal2.orientation.y = -1.0
     goal2.orientation.z = 0.0
@@ -67,8 +67,8 @@ def handle_pick_n_place(msg):
     if msg.left_right == "L":
         turn = -1.0    #rotate counter clockwise (positive radians)
         turny = -1.0
-    else:
-        turn = 1.0     #clockwise
+    elif msg.left_right == "R":
+        turn = -1.0     #clockwise
         turny = 1.0
     
     goal4.orientation.x = turn
@@ -80,7 +80,7 @@ def handle_pick_n_place(msg):
     goal5 = Pose()
     goal5.position.x = msg.target_location.pose.position.x
     goal5.position.y = msg.target_location.pose.position.y
-    goal5.position.z = z + 0.003
+    goal5.position.z = z + 0.06
     goal5.orientation.x = turn
     goal5.orientation.y = turny
     goal5.orientation.z = 0.0
@@ -135,7 +135,7 @@ def handle_pick_n_place(msg):
     left_gripper.close(block=True)
     rospy.sleep(0.5)
     left_arm.execute(plan3)
-    rospy.sleep(1.0)
+    rospy.sleep(0.5)
             
     waypoints = []
     waypoints.append(goal4)
@@ -154,14 +154,14 @@ def handle_pick_n_place(msg):
     (plan5, fraction) = left_arm.compute_cartesian_path(
                                waypoints,   # waypoints to follow with end 
                                0.01,        # eef_step
-                               0.0)         # jump_threshold
+                               0.001)         # jump_threshold
     print "fraction 5: ", fraction
     print "lowers gripper to place domino in final location, no rotation"
     left_arm.execute(plan5)
     rospy.sleep(0.5)
 
     print('Turning Off Suction.')
-    left_gripper.open(block=False)
+    left_gripper.open(block=True)
     rospy.sleep(0.5)
 
     waypoints = []
@@ -173,7 +173,7 @@ def handle_pick_n_place(msg):
     print "fraction 6: ", fraction
     print "raise gripper after placement, no rotation"
     left_arm.execute(plan6)
-    rospy.sleep(1.0)
+    rospy.sleep(0.5)
 
 
     waypoints = []
@@ -202,7 +202,7 @@ def pick_n_place_server():
     scene = PlanningSceneInterface()
     left_arm = MoveGroupCommander('left_arm')
     left_arm.set_planner_id('RRTConnectkConfigDefault')
-    left_arm.set_planning_time(5.0)
+    left_arm.set_planning_time(10.0)
     left_gripper = baxter_gripper.Gripper('left')
     left_arm.allow_replanning(True)
     left_gripper.set_vacuum_threshold(2.0)
