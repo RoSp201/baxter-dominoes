@@ -4,7 +4,7 @@ from threading import Condition
 from moveit_commander import MoveGroupCommander, RobotCommander, roscpp_initialize, PlanningSceneInterface
 import numpy as np
 import rospy
-from geometry_msgs.msg import Pose, Point, Quaternion
+from geometry_msgs.msg import PoseStamped,Pose, Point, Quaternion
 from ar_track_alvar_msgs.msg import AlvarMarkers
 from follow.srv import *
 
@@ -88,7 +88,10 @@ def handle_scan(request):
     # Move Baxter's camera to the front right corner of the table
     next_point = Point(x0, y0, z0)
     next_quat = Quaternion(0, -1, 0, 0)
-    next_pose = Pose(next_point, next_quat)
+    #next_pose = PoseStamped(next_point, next_quat)
+    next_pose = PoseStamped()
+    next_pose.pose.position = next_point
+    next_pose.pose.orientation = next_quat
     move_to_position(next_pose)
 
     raw_tags.clear()
@@ -99,7 +102,7 @@ def handle_scan(request):
         # Only move to next scan line after first scan
         if ix_scan != 0:
             # First move away from Baxter to start of next horizontal scan line
-            next_pose.position.x += dx
+            next_pose.pose.position.x += dx
             #####In case we actually need to create a new Pose for each move
             #### cur_pose = next_pose
             #### next_point = Point(curPose.position.x+dx, curPose.position.y, z0)
@@ -110,13 +113,13 @@ def handle_scan(request):
 
         # Then move horizontally across the table
         for iy_scan in range(ny-1):
-            next_pose.position.y += direction*dy
+            next_pose.pose.position.y += direction*dy
             move_to_position(next_pose)
             hold_scan()
 
         direction *= -1
 
-    next_pose.position.x, next_pose.position.y = origin
+    next_pose.pose.position.x, next_pose.pose.position.y = origin
     move_to_position(next_pose)
 
     scan_cv.release()
@@ -155,7 +158,18 @@ def ar_tag_filter(msg):
         for (tag_id, pose) in current_tags:
             print 'New tag:', tag_id, pose.pose.position.x, pose.pose.position.y
 
-            pose = translate_server(pose, 'base').output_pose_stamped
+
+            rospy.wait_for_service("translate_server")
+            pose = PoseStamped()
+            print "try to transform coordinates"
+            try:
+                translate_server = rospy.ServiceProxy("translate_server", Translate)
+                pose = translate_server(pose, 'base').output_pose_stamped
+            except rospy.ServiceException, e:
+                print "Service call failed: %s" % e
+            print "coordinates successfully transformed."
+
+
             tag_list = raw_tags[tag_id]
             tag_list.append((pose.pose.position, pose.pose.orientation))
             # If pose seen enough times, average pose information and add to seen_tags
@@ -181,7 +195,7 @@ def ar_tag_filter(msg):
 
 def move_to_position(goal_pose):
     plan, _ = left_arm.compute_cartesian_path(
-        [goal_pose],    # waypoints to follow with end
+        [goal_pose.pose],    # waypoints to follow with end
         0.03,           # eef_step
         0.0             # jump_threshold
     )

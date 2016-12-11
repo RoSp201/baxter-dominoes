@@ -70,6 +70,9 @@ def handle_pick_n_place(msg):
     elif msg.left_right == "R":
         turn = -1.0     #clockwise
         turny = 1.0
+    else:
+        turn = 0.0
+        turny = -1.0
     
     goal4.orientation.x = turn
     goal4.orientation.y = turny
