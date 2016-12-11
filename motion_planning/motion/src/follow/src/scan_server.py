@@ -1,22 +1,18 @@
 #!/usr/bin/env python
-# import rospy
-# import tf
-# import tf2_ros
-# from tf2_msgs.msg import TFMessage
-# import tf2_geometry_msgs
-# from geometry_msgs.msg import PoseStamped, Pose
-# import ar_tag_pos as arp
 from collections import defaultdict
 from threading import Condition
+
 import numpy as np
+import rospy
 from geometry_msgs.msg import Pose, Point, Quaternion
+
 from follow.srv import Scan
 
 
 # Table dimensions in meters
-dim = np.array([0.5, 1])
+dim = np.array([0.5, .5])
 # x and y FOV
-fov = np.array([.2, .2])
+fov = np.array([0.2, 0.2])
 # Number of lengthwise scans of table
 n_scans = np.ceil(dim/fov)
 nx, ny = n_scans
@@ -25,7 +21,7 @@ scan_spacing = dim/n_scans
 dx, dy = scan_spacing
 
 # Constant scan height above the table
-z0 = .2
+z0 = 0.25
 
 # MoveGroupCommander arm object
 left_arm = None
@@ -179,24 +175,24 @@ def init_motion():
     left_arm.set_planner_id('RRTConnectkConfigDefault')
     left_arm.set_planning_time(5.0)
     left_arm.allow_replanning(True)
-    left_arm.set_end_effector_link("left_gripper")
+    left_arm.set_end_effector_link('left_gripper')
     left_arm.set_pose_reference_frame('base')
 
 def init_filter():
     global translate_pose
     rospy.wait_for_service('translate_server')
-    translate_pose = rospy.ServiceProxy('translate_server', Translate)
-    rospy.init_node("ar_tag_filter", anonymous=True)
-    rospy.Subscriber("ar_pose_marker", AlvarMarkers, ar_tag_filter)
+    translate_pose = rospy.ServiceProxy('translate_server', Translate, persistent=True)
+    rospy.init_node('ar_tag_filter', anonymous=True)
+    rospy.Subscriber('ar_pose_marker', AlvarMarkers, ar_tag_filter)
 
 def scan_server():
     init_filter()
     init_motion()
-    rospy.init_node("scan_server")
-    rospy.Service("scan_server", Translate, handle_scan)
-    print("\n\Scan server ready!\n\n")
+    rospy.init_node('scan_server')
+    rospy.Service('scan_server', Scan, handle_scan)
+    print('\n\Scan server ready!\n\n')
     rospy.spin()
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     scan_server()
