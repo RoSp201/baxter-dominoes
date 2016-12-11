@@ -136,8 +136,15 @@ class Player:
 
         self.move_domino(domino_to_move, trans_move_to, rot)
 
+    def get_domino_direction(self, domino):
+        pose = domino.pose
+        quats = pose.orientation
+        if quats.x > 0:
+            return "L"
+        else:
+            return "R"
+
     def move_domino(self, domino_to_move, move_to, rot=0):
-        # NOTE: we need to make a pick and place service type for no rotation. I'm having it pass in 0 to specify this, but Robert should decide on a flag.
         #move_to must be a posed stamp object
         #move_to = unmade_translate_coords(move_to)
         #get domino transformed coordinates
