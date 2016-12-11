@@ -7,4 +7,4 @@ build
 
 *.sublime-project
 *.sublime-workspace
-
+*.nfs*
