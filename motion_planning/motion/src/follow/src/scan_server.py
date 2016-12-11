@@ -88,7 +88,6 @@ def handle_scan(request):
     # Move Baxter's camera to the front right corner of the table
     next_point = Point(x0, y0, z0)
     next_quat = Quaternion(0, -1, 0, 0)
-    #next_pose = PoseStamped(next_point, next_quat)
     next_pose = PoseStamped()
     next_pose.pose.position = next_point
     next_pose.pose.orientation = next_quat
@@ -146,8 +145,8 @@ def ar_tag_filter(msg):
         or (not scan_cv.acquire(blocking=False))):
         return
 
-    # Extract useful information, and exclude tags that already passed the filter
-    current_tags = [(marker.id, marker.pose) for marker in msg.markers if marker.id not in seen_tags]
+    # Extract useful information, and exclude tags that already passed the filter (only accept ar tags 0-31)
+    current_tags = [(marker.id, marker.pose) for marker in msg.markers if marker.id not in seen_tags and marker.id < 32]
     if current_tags:
         current_tag_ids = set(zip(*current_tags)[0])
         # Remove tags from raw dict that aren't seen this round
@@ -160,15 +159,15 @@ def ar_tag_filter(msg):
 
 
             rospy.wait_for_service("translate_server")
-            pose = PoseStamped()
+            posed_st = PoseStamped()
+            posed_st.pose = pose
             print "try to transform coordinates"
             try:
                 translate_server = rospy.ServiceProxy("translate_server", Translate)
-                pose = translate_server(pose, 'base').output_pose_stamped
+                pose = translate_server(posed_st, 'base').output_pose_stamped
             except rospy.ServiceException, e:
                 print "Service call failed: %s" % e
             print "coordinates successfully transformed."
-
 
             tag_list = raw_tags[tag_id]
             tag_list.append((pose.pose.position, pose.pose.orientation))
@@ -207,7 +206,7 @@ def init_motion():
     roscpp_initialize(sys.argv)
     left_arm = MoveGroupCommander('left_arm')
     left_arm.set_planner_id('RRTConnectkConfigDefault')
-    left_arm.set_planning_time(5.0)
+    left_arm.set_planning_time(7.0)
     left_arm.allow_replanning(True)
     left_arm.set_end_effector_link('left_gripper')
     left_arm.set_pose_reference_frame('base')
