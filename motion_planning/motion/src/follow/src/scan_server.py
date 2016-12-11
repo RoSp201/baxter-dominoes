@@ -52,6 +52,8 @@ def hold_scan():
         scan_cv.wait()
         # Wait returns with lock acquired
     # Exits with cv acquired
+    print('Tags seen:')
+    print(seen_tags)
 
 
 def handle_scan(request):
