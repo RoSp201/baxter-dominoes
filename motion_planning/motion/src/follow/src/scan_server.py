@@ -40,7 +40,7 @@ seen_tags = dict() # tag number: Pose
 # Counts scans completed at any one location
 scan_counter = 0
 # Synchronization for scanning and moving
-scan_cv = Lock()
+scan_cv = Condition()
 
 
 def hold_scan():

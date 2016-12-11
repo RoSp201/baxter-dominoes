@@ -57,6 +57,7 @@ add_service_files(
   FILES
   PickNPlace.srv
   Translate.srv
+  Scan.srv
 )
 
 ## Generate actions in the 'action' folder
