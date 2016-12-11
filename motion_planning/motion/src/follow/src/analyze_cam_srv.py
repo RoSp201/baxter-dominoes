@@ -8,8 +8,7 @@ import cv2.cv as cv
 import cv_bridge
 
 from sensor_msgs.msg import Image
-from domino_coord.srv import ImageSrv, ImageSrvResponse, DominoCoordSrv, DominoCoordSrvResponse
-
+from follow.srv import *
 
 SAMPLE_LENGTH = 100
 
@@ -25,7 +24,7 @@ class DominoService:
     rospy.Subscriber("/cameras/left_hand_camera/image", Image, self.imgReceived)
 
     #Create last image publisher
-    rospy.Publisher('baxter_image', ImageSrv)
+    img_pub = rospy.Publisher('baxter_image', Image)
 
     #Create analyze image service
     rospy.Service('domino_finder', DominoCoordSrv, self.analyzeMultipleImages)
@@ -34,10 +33,11 @@ class DominoService:
 
   def imgReceived(self, message):
     self.lastImage = message
+    self.analyzeImage([10000, [30, 40], [10, 50, 20, 0 ,35]])
 
   def analyzeImage(self, request):
     # Collect CV params
-    contourArea, cParams, hParams = request.contourArea, request.cannyParams, request.houghParams
+    contourArea, cParams, hParams = request
     # Initialize response array
     response = []
 
@@ -80,7 +80,7 @@ class DominoService:
 
         # Publish cool looking image hopefully
         cv2.drawContours(orig,[box],0,(46,97,87),10)
-        cv_bridge.CvBridge().cv2_to_imgmsg(orig, encoding="passthrough")
+        img_pub.publish(cv_bridge.CvBridge().cv2_to_imgmsg(orig, encoding="passthrough"))
 
         # Transform Domino images
         pts1 = np.float32([box[0],box[1],box[2],box[3]])

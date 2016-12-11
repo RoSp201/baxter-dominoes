@@ -12,10 +12,11 @@ from domino_coord.srv import ImageSrv, ImageSrvResponse, DominoCoordSrv, DominoC
 
 
 def main():
+
+	rospy.init_node('image_processing_node')
     rospy.wait_for_service('domino_finder')
-    rospy.init_node('image_processing_node')
     img_analyze_service = rospy.ServiceProxy('domino_finder', DominoCoordSrv)
-    d= img_analyze_service(1000,[50,60],[10,50,20,0,35])
+    d = img_analyze_service(1000,[50,60],[10,50,20,0,35])
     print d.dominos
     cv2.destroyAllWindows()
 

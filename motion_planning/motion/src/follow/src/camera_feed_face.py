@@ -10,5 +10,5 @@ def republish(msg):
 
 rospy.init_node("camera_feed_face")
 display_publisher = rospy.Publisher("/robot/xdisplay", Image)
-sub = rospy.Subscriber("/cameras/left_hand_camera/image", Image, republish, None, 1)
+sub = rospy.Subscriber("/baxter_image", Image, republish, None, 1)
 rospy.spin()

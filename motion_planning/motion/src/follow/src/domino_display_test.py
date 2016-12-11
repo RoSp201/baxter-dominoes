@@ -120,8 +120,8 @@ def listener():
     cv2.setTrackbarPos('maxRadius','settings', 35)
 
     rospy.init_node('listener', anonymous=True)
-    #rospy.Subscriber("/cameras/left_hand_camera/image", Image, imgReceived)
-    rospy.Subscriber("/usb_cam/image_raw", Image, imgReceived)
+    rospy.Subscriber("/cameras/left_hand_camera/image", Image, imgReceived)
+    #rospy.Subscriber("/usb_cam/image_raw", Image, imgReceived)
     rospy.spin()
 
 def nothing(nothing):
