@@ -107,8 +107,27 @@ class Player:
                     spots = self.spinner.get_open_spots()
                     norm = lambda p1, p2: sqrt((p1.pose.position.x - p2.pose.position.x)**2 + (p1.pose.position.y - p2.pose.position.y)**2)
 
-                    spot = min(spots, key= lambda x: norm(newdom.pose_st, 
-                self.turns_taken += len(newdoms)
+                    spot = min(spots, key= lambda dom: norm(newdom.pose_st, dom[0].pose_st))
+                    spot[0].sides[spot[1]] = newdom
+
+                    # Find out which side of the new domino just got added to
+                    pips = None
+                    if spot[1] == "top":
+                        pips = spot[0].pips[0]
+                    elif spot[1] == "bottom":
+                        pips = spot[0].pips[1]
+
+                    # Update the new domino's adjacent dominoes.
+                    if newdom.pips[0] == pips:
+                        newdom.sides["top"] = spot[0]
+                    elif newdom.pips[1] == pips:
+                        newdom.sides["bottom"] = spot[0]
+                    else:
+                        print "Invalid move detected."
+
+                    # We have a new turn for each new domino we see.
+                    self.turns_taken += 1
+
             if not self.turns_taken % NUM_PLAYERS:
                 print "Taking turn"
                 self.take_turn()
