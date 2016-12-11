@@ -34,6 +34,7 @@ class DominoService:
 
   def imgReceived(self, message):
     self.lastImage = message
+    
 
   def analyzeImage(self, request):
     # Collect CV params
@@ -49,7 +50,7 @@ class DominoService:
 
 
     # Find domino contours
-    contours, hierarchy = cv2.findContours(img,1,cv2.CHAIN_APPROX_SIMPLE)
+    contours, hierarchy = cv2.findContours(img,cv2.RETR_TREE,cv2.CHAIN_APPROX_TC89_KCOS )
     dominoContour = [cont for cont in contours if cv2.contourArea(cont)>contourArea]
 
     # For each domino

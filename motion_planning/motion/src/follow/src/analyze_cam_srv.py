@@ -11,6 +11,7 @@ from sensor_msgs.msg import Image
 from follow.srv import *
 
 SAMPLE_LENGTH = 100
+COUNTER_LENGTH = 3
 
 class DominoService:
   def __init__(self):
@@ -21,36 +22,49 @@ class DominoService:
     rospy.init_node('cam_listener')
 
     #Subscribe to the image topic
-    rospy.Subscriber("/cameras/left_hand_camera/image", Image, self.imgReceived)
+    #rospy.Subscriber("/cameras/left_hand_camera/image", Image, self.imgReceived)
+    rospy.Subscriber("/usb_cam/image_raw", Image, self.imgReceived)
 
     #Create last image publisher
-    img_pub = rospy.Publisher('baxter_image', Image)
+    self.img_pub = rospy.Publisher('baxter_image', Image)
 
     #Create analyze image service
     rospy.Service('domino_finder', DominoCoordSrv, self.analyzeMultipleImages)
+
+    self.counter = 0
+    self.copy = None
 
     print "All Ready"
 
   def imgReceived(self, message):
     self.lastImage = message
-    self.analyzeImage([10000, [30, 40], [10, 50, 20, 0 ,35]])
+    self.analyzeImage([50000, [20, 20], [10, 50, 20, 0 ,35]])
 
-  def analyzeImage(self, request):
+  def analyzeImage(self, params):
     # Collect CV params
-    contourArea, cParams, hParams = request
+    contourArea, cParams, hParams = params
     # Initialize response array
     response = []
 
-    # Convert image to mat, grayscale, blur , and apply canny filter
+    # Convert image to mat, grayscale, blur , and apply canny or threshold filter
     orig = cv_bridge.CvBridge().imgmsg_to_cv2(self.lastImage, desired_encoding="passthrough")
+    if self.counter == 0:
+        self.copy = orig.copy()
     gray = cv2.cvtColor(orig, cv2.COLOR_BGR2GRAY)
     blur = cv2.GaussianBlur(gray,(3,3),0)
     img = cv2.Canny(blur,cParams[0],cParams[1])
+    #img = cv2.adaptiveThreshold(blur,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY,11,2)
 
 
     # Find domino contours
     contours, hierarchy = cv2.findContours(img,1,cv2.CHAIN_APPROX_SIMPLE)
-    dominoContour = [cont for cont in contours if cv2.contourArea(cont)>contourArea]
+    dominoContour = []
+    for i in range(len(contours)):
+        ((cx,cy),(w,h),angle) = rect = cv2.minAreaRect(contours[i])
+        # THESE MIGHT NEED TO BE TUNED!
+        if w*h < 80000 and w*h > 60000 and w < 500 and h < 500 and (abs(abs(angle) - 90) < 10 or abs(angle) < 10) :
+            dominoContour += [contours[i]]
+    #dominoContour = [cont for cont in contours if cv2.contourArea(cont)>contourArea and cv2.contourArea(cont)<100000]
 
     # For each domino
     for i in range(len(dominoContour)):
@@ -72,15 +86,14 @@ class DominoService:
         # Find coordinates and put in reasonable order
         box = cv2.cv.BoxPoints(rect)
         box = np.int0(box)
-        box = np.array(sorted(box, key=lambda pt: pt[0]+pt[1]))
-        if box[1][0] < box[2][0]:
-            temp = box[1].copy()
-            box[1] = box[2]
-            box[2] = temp
+        # box = np.array(sorted(box, key=lambda pt: pt[0]+pt[1]))
+        # if box[1][0] < box[2][0]:
+        #     temp = box[1].copy()
+        #     box[1] = box[2]
+        #     box[2] = temp
 
         # Publish cool looking image hopefully
-        cv2.drawContours(orig,[box],0,(46,97,87),10)
-        img_pub.publish(cv_bridge.CvBridge().cv2_to_imgmsg(orig, encoding="passthrough"))
+        cv2.drawContours(self.copy,[box],0,(255,0,255),10)
 
         # Transform Domino images
         pts1 = np.float32([box[0],box[1],box[2],box[3]])
@@ -113,15 +126,18 @@ class DominoService:
         # Add results to array
         response += [side1, side2, vert, cx, cy]
 
+    self.counter = (self.counter + 1) % COUNTER_LENGTH
+    if self.counter == COUNTER_LENGTH - 1:
+        self.img_pub.publish(cv_bridge.CvBridge().cv2_to_imgmsg(self.copy, encoding="passthrough"))
     return response
 
   def analyzeMultipleImages(self, request):
-    # Init
-    totalResponse = self.analyzeImage(request)
+    params = [request.contourArea, request.cannyParams, request.houghParams]
+    totalResponse = self.analyzeImage(params)
     # Use multiple samples
     for i in range(SAMPLE_LENGTH):
       # Do a sample
-      response = self.analyzeImage(request)
+      response = self.analyzeImage(params)
       # Check each domino response
       for j in range(len(response) / 5):
         # Compare to each domino is current accumlation of dominos

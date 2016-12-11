@@ -22,21 +22,28 @@ def imgReceived(message):
     maxRadius = cv2.getTrackbarPos('maxRadius','settings')
 
     orig = img.copy()
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    blur = cv2.GaussianBlur(gray,(9,9),0)
+    gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+    blur = cv2.GaussianBlur(gray,(3,3),0)
+    #img = cv2.adaptiveThreshold(blur,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY,11,2)
+
     img = cv2.Canny(blur,canny1,canny2)
     response = []
-    #img = cv2.adaptiveThreshold(img,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY,11,2)
-    contours, hierarchy = cv2.findContours(img,1,cv2.CHAIN_APPROX_SIMPLE)
+    contours, hierarchy = cv2.findContours(img,cv2.RETR_TREE,cv2.CHAIN_APPROX_TC89_KCOS )
+    # for i in range(len(contours)):
+    #     cv2.drawContours(img, contours, , (100,100,100), 10)
+    #     cv2.imshow('img', img)
+    #     cv2.waitKey(0)
+
     cont2 = [cont for cont in contours if cv2.contourArea(cont)>contourArea]
+    print cont2
     for i in range(len(cont2)):
         ((cx,cy),(w,h),angle) = rect = cv2.minAreaRect(cont2[i])
-        match = False
-        for i in range(len(response)/5):
-          if abs(cx-response[3 + 5*i]) < 10 or abs(cy - response[4 + 5*i])< 10:
-            match = True
-        if match:
-          continue
+        # match = False
+        # for i in range(len(response)/5):
+        #   if abs(cx-response[3 + 5*i]) < 10 or abs(cy - response[4 + 5*i])< 10:
+        #     match = True
+        # if match:
+        #   continue
         if abs(angle) > 45:
             w,h = h,w
         box = cv2.cv.BoxPoints(rect)
@@ -97,7 +104,7 @@ def imgReceived(message):
 def listener():
     cv2.namedWindow('settings')
 
-    cv2.createTrackbar('contourArea','settings',0,5000,nothing)
+    cv2.createTrackbar('contourArea','settings',0,10000,nothing)
 
     cv2.createTrackbar('canny1','settings',0,300,nothing)
     cv2.createTrackbar('canny2','settings',0,500,nothing)

@@ -26,9 +26,15 @@ def imgReceived(message):
     blur = cv2.GaussianBlur(gray,(9,9),0)
     img = cv2.Canny(blur,canny1,canny2)
     response = []
-    #img = cv2.adaptiveThreshold(img,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY,11,2)
+    #img = cv2.adaptiveThreshold(blur,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY,11,2)
     contours, hierarchy = cv2.findContours(img,1,cv2.CHAIN_APPROX_SIMPLE)
-    cont2 = [cont for cont in contours if cv2.contourArea(cont)>contourArea]
+    cont2 = []
+    for i in range(len(contours)):
+        ((cx,cy),(w,h),angle) = rect = cv2.minAreaRect(contours[i])
+        if w*h < 100000 and w*h > 60000:
+            cont2 += [contours[i]]
+    print cont2
+    #cont2 = [cont for cont in contours if cv2.contourArea(cont)>contourArea and cv2.contourArea(cont)<100000]
     for i in range(len(cont2)):
         ((cx,cy),(w,h),angle) = rect = cv2.minAreaRect(cont2[i])
         match = False
@@ -89,15 +95,15 @@ def imgReceived(message):
         cv2.imshow('domino' + str(i), dom)
 
 
-    #cv2.drawContours(img, cont2, 1, (100,100,100), 10)
-    cv2.imshow('img',img)
+    cv2.drawContours(orig, cont2, -1, (100,100,100), 10)
+    cv2.imshow('img',orig)
     cv2.waitKey(1)
 
 
 def listener():
     cv2.namedWindow('settings')
 
-    cv2.createTrackbar('contourArea','settings',0,5000,nothing)
+    cv2.createTrackbar('contourArea','settings',0,20000,nothing)
 
     cv2.createTrackbar('canny1','settings',0,300,nothing)
     cv2.createTrackbar('canny2','settings',0,500,nothing)
@@ -108,7 +114,7 @@ def listener():
     cv2.createTrackbar('minRadius','settings',0,20,nothing)
     cv2.createTrackbar('maxRadius','settings',0,50,nothing)
 
-    cv2.setTrackbarPos('contourArea','settings', 1000)
+    cv2.setTrackbarPos('contourArea','settings', 3000)
 
     cv2.setTrackbarPos('canny1','settings', 50)
     cv2.setTrackbarPos('canny2','settings', 60)
@@ -120,8 +126,8 @@ def listener():
     cv2.setTrackbarPos('maxRadius','settings', 35)
 
     rospy.init_node('listener', anonymous=True)
-    rospy.Subscriber("/cameras/left_hand_camera/image", Image, imgReceived)
-    #rospy.Subscriber("/usb_cam/image_raw", Image, imgReceived)
+    #rospy.Subscriber("/cameras/left_hand_camera/image", Image, imgReceived)
+    rospy.Subscriber("/usb_cam/image_raw", Image, imgReceived)
     rospy.spin()
 
 def nothing(nothing):
