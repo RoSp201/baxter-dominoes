@@ -2,6 +2,9 @@
   <!-- Created by Robert Spark on 12/7/16 -->
   <!-- Copyright © 2016 Robert Spark. All rights reserved. -->
 
+  <!-- This node will launch rviz and ar track alvar together in separate terminals -->
+  <node name="rviz" pkg="rviz" type="rviz" output="screen" launch-prefix="xterm -e" /> 
+
   <!-- arguments for running ar_track_alvar package -->
   <arg name="marker_size" default="1.96" />
   <arg name="max_new_marker_error" default="0.08" />
