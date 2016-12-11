@@ -2,8 +2,9 @@
 
 #TODO: lots of imports to call local services, as well as be a node.
 import sys
+import copy
 import rospy
-from geometry_msgs import Pose, Point, Quaternion
+from geometry_msgs import PoseStamped, Pose, Point, Quaternion
 #For the head nod:
 import baxter_interface
 
@@ -20,49 +21,71 @@ from follow.srv import *
 CTRL+F your name in all caps for anything I asked you to do.
 """
 
+#TODO before 8:
+#! Look at main game loop
+# initialize properly
+
 # Constants to figure out
 VERT_VERT_OFFSET = .13
 HORIZ_VER_OFFSET = 0xdaddb0dd
 HAND_SPACE_OFFSET = .03
+HAND_AR_NUM = 0
 NUM_PLAYERS = 2
 
 class Player:
+    ar_map = {15: (6,2), \
+            8:(4,1), \
+            19:(6,5), \
+            5:(3,1), \
+            10:(5,1), \
+            20:(6,4), \
+            17:(6,3)}
+
     def __init__(self, hand, root):
         self.hand = hand # array of domino objects
         self.root = root # Domino representing the spinner
         self.turns_taken = 0
-        self.seen = [] # Domino objects for dominos we've seen
+        self.seen = {} # Domino objects for dominos we've seen
         self.game_init()
 
     def game_init(self):
         #Find hand AR tag and populate both seen and hand with the dominoes in our hand.
         self.scan_for_dominoes()
-        # TODO: initialize the hand_base
-        # TODO: scan full reachable workspace for table dimensions.
-        for domino in self.seen:
-
-
+        self.hand_coords = self.seen[HAND_AR_NUM]
+        self.hand = self.seen.values()
+        self.root = self.get_next_domino()
+        self.game_loop()
 
     def pick_from_boneyard(self):
         """Wait for a player to give us a domino"""
         # Make baxter signal that he can't make a move by nodding.
         baxter_interface.Head().command_nod()
         rospy.sleep(5)
-        domino = self.get_next_domino()
-        hand.append(domino)
-        hand_coords = self.hand_base
+        domino = None
+        while not domino:
+            domino = self.get_next_domino()
+            sleep(5)
+        pos_in_hand  = self.add_domino_to_hand((domino))
+        hand_coords = copy.deepcopy(self.hand_base)
         # This assumes that Baxter's hand starts in the closest-left corner of the table and it grows to the right.
-        hand_coords.y = hand_coords[1] + len(hand) * HAND_SPACE_OFFSET
-        #TODO: move domino
+        hand_coords.position.y += (pos_in_hand + 1) * HAND_SPACE_OFFSET
+        self.move_domino(domino, hand_coords)
+
+    def add_domino_to_hand(self, domino):
+        i = 0
+        while i < len(self.hand) and self.hand[i]:
+            i += 1
+        self.hand.insert(i, domino)
 
     def game_loop(self):
         game_ended = False
         self.game_init()
         while not game_ended:
             while not self.turns_taken % NUM_PLAYERS == 0:
-                newdoms = self.get_next_domino()
-            ## Make a move:
-            self.turns_taken += len(newdoms)
+                rospy.sleep(5)
+                newdoms = self.scan_for_dominoes()
+                ## Make a move:
+                self.turns_taken += len(newdoms)
             if not self.turns_taken % NUM_PLAYERS:
                 self.take_turn()
 
@@ -81,19 +104,26 @@ class Player:
             return
         domino_to_move = self.hand[move[0]]
         domino_to_move_to = open_spots[move[1]]
-        if move[2] == "bottom":
-            unmade_spin_domino()
-        move_to = domino_to_move_to.get_location_from_domino(move[3])
-        #ROBERT: change the domino coordinates to the world coordinates
-        self.move_domino(domino_to_move, move_to)
+        # Calculate which direction to rotate the domino.
+        LR = self.get_domino_direction(domino_to_move_to)
+        rot  = None
+        # If the domino with the open spot has its X axis pointing left:
+        if LR == "L":
+            if move[3] == "bottom" and move[4] == "top" or\
+                    move[3] == "top" and move[4] == "bottom":
+                rot = "L"
+            else:
+                rot = "R"
+        # If the domino with the open spot has its X axis pointing right:
+        if LR == "R":
+            if move[3] == "bottom" and move[4] == "top" or\
+                    move[3] == "top" and move[4] == "bottom":
+                rot = "R"
+            else:
+                rot = "L"
 
-    def move_domino(self, domino_to_move, move_to):
-        #move_to must be a posed stamp object
-        #move_to = unmade_translate_coords(move_to)
-        #get domino transformed coordinates
-        #domino to move.location needs to be a poseStamped object
-        #third arg of pick_n_place is the direction that baxter needs to rotate the domino on the board.
-        # tranform coordinates into base frame from left_hand_camera frame
+        # Get the coordinates to move to and translate them into the world frame.
+        move_to = domino_to_move_to.get_location_from_domino(move[3])
         rospy.wait_for_service("pose_translate_server")
         trans_move_to = PoseStamped()
         print "try to transform coordinates"
@@ -104,13 +134,22 @@ class Player:
             print "Service call failed: %s" % e
         print "coordinates successfully transformed."
 
+        self.move_domino(domino_to_move, trans_move_to, rot)
+
+    def move_domino(self, domino_to_move, move_to, rot=0):
+        # NOTE: we need to make a pick and place service type for no rotation. I'm having it pass in 0 to specify this, but Robert should decide on a flag.
+        #move_to must be a posed stamp object
+        #move_to = unmade_translate_coords(move_to)
+        #get domino transformed coordinates
+        #domino to move.location needs to be a poseStamped object
+        #third arg of pick_n_place is the direction that baxter needs to rotate the domino on the board.
+
         # place the domino on the board.
         print "try to place domino"
         rospy.wait_for_service("pick_n_place_server")
         try:
-            left = "L"
             pick_n_place = rospy.ServiceProxy("pick_n_place_server", PickNPlace)
-            response = pick_n_place(domino_to_move.location, trans_move_to, left)
+            response = pick_n_place(domino_to_move.location, move_to, rot)
             return response
         except rospy.ServiceException, e:
             print "Service call failed: %s" % e
@@ -123,43 +162,34 @@ class Player:
         """Finds all new dominoes currently detectable and enforces that we see no more than num_dominoes new ones.
         A value of zero indicates that any number of new dominoes is allowed."""
         while 1:
-            ## Find new dominoes:
-            # TODO HENRY:
-            dominoes = CV_SENSE
-            newdoms = []
-            for domino in dominoes:
-                # Convert the domino pips to our notation:
-                pips = (max(domino[0], domino[1], min(domino[0], domino[1])))
-                if not pips in seen:
-                    orientation = domino[3]
-                    orientation_obj = convert_orientation_to_object #This is pseudocoded out because we don't know the specifics of the scan yet.
-                    pose_obj = get_pose_from_domino #this is pseudocoded out because we don't know the specifics of the CV return values yet.
-                    new_domino = Domino(pose_obj, orientation_obj)
-                    newdoms.append(domino)
-                    seen.add(domino)
-            # Make sure that we're not too off the mark on how many new dominoes we should have.
-            if num_dominoes and len(newdoms) > num_dominoes:
-                raise Exception
-            return newdoms
+        ## Find new dominoes:
+        dominoes = self.ROSSRV_SCAN()
+        newdoms = []
+        for domino in dominoes:
+            # Convert the domino pips to our notation:
+            if not domino in list(self.seen):
+                orientation = domino[3]
+                orientation_obj = convert_orientation_to_object #This is pseudocoded out because we don't know the specifics of the scan yet.
+                pose_obj = get_pose_from_domino #this is pseudocoded out because we don't know the specifics of the CV return values yet.
+                new_domino = Domino(pose_obj, orientation_obj)
+                newdoms.append(domino)
+                self.seen.add(domino)
+        # Make sure that we're not too off the mark on how many new dominoes we should have.
+        if num_dominoes and len(newdoms) > num_dominoes:
+            raise Exception
+        return newdoms
 
     def get_next_domino(self):
-        return self.scan_for_dominoes(1)
+        return self.scan_for_dominoes(1)[0]
 
-    def CV_sense(self):
-        # TODO: HENRY:
-        # make this call the CV service and return a list of dominoes.
-        # The dominoes can have any format, but make sure to either specify them here or in the CV engine.
-        # We need this information for each domino:
-        # num pips, orientation, corresponding AR tag
-        # (position on the screen is OK if we can find functionality to get that AR tag, but that seems like kind of a toss-up)
-        # ROBERT: This also where we should perform our scan, so start thinking on the kinematics to make sure that we seethe whole board.
-        # Currently, the init function uses this alongside the play function. We might want to have a separate scan for reading our hand.
-        # Just an idea, if you get moving scans working and you want to compartmentalize.
+    def ROSSRV_SCAN(self):
+        # TODO: call the new scan service, and put the returned poses into domino objects.
         pass
 
     def best_move_greedy(self, hand, open_spots):
         hiscore = 0
-        best_play = (-1, -1, "ERR", "ERR", "none") #Position in hand, position in open_spots, side of the moving domino, side of the stationary domino, which way to rotate.
+        #Position in hand, position in open_spots, side of the moving domino, side of the stationary domino
+        best_play = (-1, -1, "ERR", "ERR")
         for spot in range(len(open_spots)):
             for i in range(len(hand)):
                 curr = hand[i]
@@ -188,6 +218,11 @@ class Domino:
         self.pips = pips
         self.sides = {"top": None, "bottom": None, "left": None, "right": None}
         self.pose = pose
+
+    def __eq__(self, other):
+        if self.pips == other.pips:
+            return True
+        return False
 
     def place(self, otherdom, pos):
         """ Places otherdom at this domino's pos"""
@@ -237,11 +272,12 @@ class Domino:
 
     def get_location_to_move_to(self, side):
         """Returns the offset from this domino's origin to apply to a domino if placing it at side side, specified in this domino's reference frame."""
+        temp = Pose()
         if "side" == "top":
-            return (VERT_VERT_OFFSET, 0 0)
+            temp.position.x += VERT_VERT_OFFSET
         if "side" == "bottom":
-            return (-VERT_VERT_OFFSET, 0, 0)
+            temp.position.x -= VERT_VERT_OFFSET
         if "side" == "left":
-            return (0, HORIZ_VERT_OFFSET, 0)
+            temp.position.y += VERT_VERT_OFFSET
         if "side" == "right":
-            return (0, -HORIZ_VERT_OFFSET, 0)
+            temp.position.y -= VERT_VERT_OFFSET
