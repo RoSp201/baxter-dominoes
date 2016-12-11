@@ -18,7 +18,7 @@ CTRL+F your name in all caps for anything I asked you to do.
 VERT_VERT_OFFSET = .13
 HORIZ_VER_OFFSET = 0xdaddb0dd
 HAND_SPACE_OFFSET = .03
-HAND_AR_NUM = 0
+HAND_AR_NUM = 31
 NUM_PLAYERS = 2
 TAGS_TO_PIPS = {15:  (6, 2),
                 8: (4, 1),
@@ -26,6 +26,7 @@ TAGS_TO_PIPS = {15:  (6, 2),
                 5: (3, 1),
                 10: (5, 1),
                 20: (6, 4),
+                31: (0, 0),
                 17: (6, 3)}
 TABLE_CENTER = [0.6, .4]
 
@@ -37,14 +38,22 @@ class Player:
         self.game_init()
 
     def game_init(self):
+        print "Scanning for the hand"
         # Find hand AR tag and populate both seen and hand with the dominoes in our hand.
         self.scan_for_dominoes()
         self.hand_coords = self.seen[HAND_AR_NUM]
         # Take away the root hand tag when we're constructing the list
         del self.seen[HAND_AR_NUM]
         self.hand = self.seen.values()
-        self.seen[HAND_AR_NUM] = self.hand_coords
+        i = 1
+        for domino in self.hand:
+            hand_coords = copy.deepcopy(self.hand_coords)
+            hand_coords.position.y -= i * HAND_SPACE_OFFSET
+            self.move_domino(domino, hand_hand_coords)
+        #self.seen[HAND_AR_NUM] = self.hand_coords
+        print "Scanning for the root"
         self.root = self.get_next_domino()
+
         self.game_loop()
 
     def pick_from_boneyard(self):
@@ -59,7 +68,7 @@ class Player:
         pos_in_hand = self.add_domino_to_hand((domino))
         hand_coords = copy.deepcopy(self.hand_base)
         # This assumes that Baxter's hand starts in the closest-left corner of the table and it grows to the right.
-        hand_coords.position.y += (pos_in_hand + 1) * HAND_SPACE_OFFSET
+        hand_coords.position.y -= (pos_in_hand + 1) * HAND_SPACE_OFFSET
         self.move_domino(domino, hand_coords)
 
     def add_domino_to_hand(self, domino):
@@ -116,11 +125,11 @@ class Player:
 
         # Get the coordinates to move to and translate them into the world frame.
         move_to = domino_to_move_to.get_location_from_domino(move[3])
-        rospy.wait_for_service("pose_translate_server")
+        rospy.wait_for_service("translate_server")
         trans_move_to = PoseStamped()
         print "try to transform coordinates"
         try:
-            translate = rospy.ServiceProxy("pose_translate_server", Translate)
+            translate = rospy.ServiceProxy("translate_server", Translate)
             trans_move_to = translate(move_to, 'left_hand_camera_axis')
         except rospy.ServiceException, e:
             print "Service call failed: %s" % e
@@ -164,14 +173,9 @@ class Player:
             dominoes = self.call_scan()
             newdoms = []
             for domino in dominoes:
-                # Convert the domino pips to our notation:
-                if domino not in list(self.seen):
-                    orientation = domino[3]
-                    orientation_obj = convert_orientation_to_object #This is pseudocoded out because we don't know the specifics of the scan yet.
-                    pose_obj = get_pose_from_domino #this is pseudocoded out because we don't know the specifics of the CV return values yet.
-                    new_domino = Domino(pose_obj, orientation_obj)
+                if domino not in list(self.seen) and domino.tag <= 31:
                     newdoms.append(domino)
-                    self.seen.add(domino)
+                    self.seen[domino.tag] = domino
             # Make sure that we're not too off the mark on how many new dominoes we should have.
             if num_dominoes and len(newdoms) > num_dominoes:
                 raise Exception
@@ -182,10 +186,13 @@ class Player:
 
     def call_scan(self):
         # TODO: call the new scan service, and put the returned poses into domino objects.
-        (tags, positions) = self.blatnerize()
+        tags, positions = self.blatnerize()
+        print tags
+        print positions
         dominoes = []
-        for i in len(tags):
+        for i in range(len(tags)):
             dominoes.append(Domino(TAGS_TO_PIPS[tags[i]], tags[i], positions[i]))
+        return dominoes
 
 
     def blatnerize(self):
@@ -193,12 +200,13 @@ class Player:
         print "try to do a scan"
         try:
             scan = rospy.ServiceProxy("scan_server", Scan, persistent=True)
-            respscan = scan(table_center)
+            response = scan(TABLE_CENTER)
             tag_numbers, tag_poses = response.tagNumbers, response.arTagPoses
+            print "Scan returned {} and {}".format(tag_numbers, tag_poses)
         except rospy.ServiceException, e:
             print "Service call failed: %s" % e
         print "Scan successful."
-        return (tag_numbers, tag_poses)
+        return tag_numbers, tag_poses
 
     def best_move_greedy(self, hand, open_spots):
         hiscore = 0
@@ -235,9 +243,10 @@ class Domino:
         self.pose = pose
 
     def __eq__(self, other):
-        if self.pips == other.pips:
-            return True
-        return False
+        if type(other) == int:
+            return self.tag == other
+        else:
+            return self.tag == other.tag
 
     def place(self, otherdom, pos):
         """ Places otherdom at this domino's pos"""
