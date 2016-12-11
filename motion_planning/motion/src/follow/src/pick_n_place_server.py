@@ -80,7 +80,7 @@ def handle_pick_n_place(msg):
     goal5 = Pose()
     goal5.position.x = msg.target_location.pose.position.x
     goal5.position.y = msg.target_location.pose.position.y
-    goal5.position.z = z + 0.005
+    goal5.position.z = z + 0.003
     goal5.orientation.x = turn
     goal5.orientation.y = turny
     goal5.orientation.z = 0.0
@@ -121,7 +121,7 @@ def handle_pick_n_place(msg):
     print "fraction 2: ", fraction
     print 'touch domino, no rotation yet'
     left_arm.execute(plan2)
-    rospy.sleep(2.0)
+    rospy.sleep(1.0)
     
     waypoints = []
     waypoints.append(goal3)
@@ -135,13 +135,13 @@ def handle_pick_n_place(msg):
     left_gripper.close(block=True)
     rospy.sleep(0.5)
     left_arm.execute(plan3)
-    rospy.sleep(2.0)
+    rospy.sleep(1.0)
             
     waypoints = []
     waypoints.append(goal4)
     (plan4, fraction) = left_arm.compute_cartesian_path(
                                waypoints,   # waypoints to follow with end 
-                               0.03,        # eef_step (can make 0 for no waypoints?)
+                               0.01,        # eef_step (can make 0 for no waypoints?)
                                0.0)         # jump_threshold
     print "fraction 4: ", fraction
     print "domino should be placed and correct orientation"
@@ -180,7 +180,7 @@ def handle_pick_n_place(msg):
     waypoints.append(goal7)
     (plan7, fraction) = left_arm.compute_cartesian_path(
                                waypoints,   # waypoints to follow with end 
-                               0.03,       # eef_step
+                               0.01,       # eef_step
                                0.0)         # jump_threshold
     
     print "fraction 7: ", fraction
