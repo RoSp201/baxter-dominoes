@@ -10,9 +10,9 @@ from follow.srv import Scan
 
 
 # Table dimensions in meters
-dim = np.array([0.5, 0.5])
+dim = np.array([0.4, 0.6])
 # x and y FOV
-fov = np.array([0.2, 0.2])
+fov = np.array([0.15, 0.15])
 # Number of lengthwise scans of table
 n_scans = np.ceil(dim/fov)
 nx, ny = n_scans
