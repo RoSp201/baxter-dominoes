@@ -1,6 +1,5 @@
 #!/usr/bin/env python2
 
-#TODO: lots of imports to call local services, as well as be a node.
 import sys
 import copy
 import rospy
@@ -15,15 +14,9 @@ from DominoCordSrv.srv import *
 from ImageSrv.srv import *
 from follow.srv import *
 
-
-
 """Currently, this is an OOP skeleton that we should put the ROS in.
 CTRL+F your name in all caps for anything I asked you to do.
 """
-
-#TODO before 8:
-#! Look at main game loop
-# initialize properly
 
 # Constants to figure out
 VERT_VERT_OFFSET = .13
@@ -52,7 +45,10 @@ class Player:
         #Find hand AR tag and populate both seen and hand with the dominoes in our hand.
         self.scan_for_dominoes()
         self.hand_coords = self.seen[HAND_AR_NUM]
+        # Take away the root hand tag when we're constructing the list
+        del self.seen[HAND_AR_NUM]
         self.hand = self.seen.values()
+        self.seen[HAND_AR_NUM] = self.hand_coords
         self.root = self.get_next_domino()
         self.game_loop()
 
