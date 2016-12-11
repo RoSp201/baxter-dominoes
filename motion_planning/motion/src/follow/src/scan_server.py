@@ -29,9 +29,6 @@ left_arm = None
 # translate_service proxy
 translate_pose = None
 
-# Number of attempts to hit goal position
-move_attempts = 3
-
 
 # Continuously populated dictionary of seen AR tags
 # raw_tags contains each tag seen in the last tag reading
@@ -156,16 +153,13 @@ def ar_tag_filter(msg):
 
 
 def move_to_position(goal_pose):
-    for i in range(move_attempts):
-        plan, fraction = left_arm.compute_cartesian_path(
-            [goal_pose],    # waypoints to follow with end
-            0.01,           # eef_step
-            0.0             # jump_threshold
-        )
-        left_arm.execute(plan)
-        rospy.sleep(5)
-        if 0.9 < fraction:
-            return
+    plan, _ = left_arm.compute_cartesian_path(
+        [goal_pose],    # waypoints to follow with end
+        0.01,           # eef_step
+        0.0             # jump_threshold
+    )
+    left_arm.execute(plan)
+    rospy.sleep(5)
 
 
 def init_motion():
