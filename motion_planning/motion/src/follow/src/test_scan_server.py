@@ -5,7 +5,7 @@ import rospy
 from follow.srv import Scan
 
 
-table_origin = [.4, -0.25]
+table_origin = [.2, -0.25]
 
 
 def test_scan_server():
