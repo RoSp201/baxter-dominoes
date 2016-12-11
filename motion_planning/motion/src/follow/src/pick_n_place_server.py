@@ -7,6 +7,8 @@ from baxter_interface import gripper as baxter_gripper
 import moveit_msgs.msg
 from follow.srv import PickNPlace 
 
+left_arm = left_gripper = scene = robot = None
+
 def handle_pick_n_place(msg):
     """
     this is a service to help move dominoes to correct place position and orientation with respect to the board state
@@ -98,7 +100,6 @@ def handle_pick_n_place(msg):
     goal7 = msg.hand_domino.pose
     goal7.position.z = z + 0.10
 
-    print("\nstarting pose of eof: {}".format(left_arm.get_current_pose("left_gripper")))
 
     waypoints = []
     waypoints.append(goal)
@@ -131,7 +132,7 @@ def handle_pick_n_place(msg):
     print "fraction 3: ", fraction
     print "Turning on Suction."
     print "raise domino, no rotation yet"
-    left_gripper.close(block=False)
+    left_gripper.close(block=True)
     rospy.sleep(0.5)
     left_arm.execute(plan3)
     rospy.sleep(2.0)
@@ -140,12 +141,12 @@ def handle_pick_n_place(msg):
     waypoints.append(goal4)
     (plan4, fraction) = left_arm.compute_cartesian_path(
                                waypoints,   # waypoints to follow with end 
-                               0.01,        # eef_step (can make 0 for no waypoints?)
+                               0.03,        # eef_step (can make 0 for no waypoints?)
                                0.0)         # jump_threshold
     print "fraction 4: ", fraction
     print "domino should be placed and correct orientation"
     left_arm.execute(plan4)
-    rospy.sleep(2.0)
+    rospy.sleep(3.0)
 
 
     waypoints = []
@@ -157,7 +158,7 @@ def handle_pick_n_place(msg):
     print "fraction 5: ", fraction
     print "lowers gripper to place domino in final location, no rotation"
     left_arm.execute(plan5)
-    rospy.sleep(2.0)
+    rospy.sleep(0.5)
 
     print('Turning Off Suction.')
     left_gripper.open(block=False)
@@ -179,7 +180,7 @@ def handle_pick_n_place(msg):
     waypoints.append(goal7)
     (plan7, fraction) = left_arm.compute_cartesian_path(
                                waypoints,   # waypoints to follow with end 
-                               0.01,       # eef_step
+                               0.03,       # eef_step
                                0.0)         # jump_threshold
     
     print "fraction 7: ", fraction
@@ -187,11 +188,13 @@ def handle_pick_n_place(msg):
     left_arm.execute(plan7)
     rospy.sleep(1.0)
     print("done.")
+    return 
 
 
 
 def pick_n_place_server():
 
+    global left_arm, scene, robot, left_gripper
     rospy.init_node("pick_n_place_server")
     
     roscpp_initialize(sys.argv)

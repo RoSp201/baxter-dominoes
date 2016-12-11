@@ -1,4 +1,0 @@
-<launch>
-    <arg name="enable" default="-e" />
-    <node name="enable_robot" pkg="baxter_tools" type="enable_robot.py" arg="$(enable)" />
-</launch>
