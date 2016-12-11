@@ -10,7 +10,7 @@ from follow.srv import Scan
 
 
 # Table dimensions in meters
-dim = np.array([0.5, .5])
+dim = np.array([0.5, 0.5])
 # x and y FOV
 fov = np.array([0.2, 0.2])
 # Number of lengthwise scans of table
@@ -60,20 +60,22 @@ def handle_scan(request):
     """
     Scan.srv format:
 
+    # Request to scan table for Dominoes
     # x0,y0 coordinates of front right corner of table
     # Note that left is positve y and forward is positive x
     #          x
-    #    ______^
-    #   |      |
-    #   |______|
-    # y<       ^=(x0, y0)
-    uint32[] tableOrigin
+    #    ______^______
+    #   |      :      |
+    # y<|......O......|
+    #   |______:______|._(x0,y0)
+    #
+    uint32[] tableCenter
     ---
     uint32[] tagNumbers
     geometry_msgs/Pose[] arTagPoses
     """
-    x0, y0 = request.tableOrigin
-    x1, y1 = dim + [x0, y0]
+    origin = np.array(request.tableCenter)
+    x0, y0 = origin - (dim/2)
 
     # Move Baxter's camera to the front right corner of the table
     next_point = Point(x0, y0, z0)
@@ -149,6 +151,7 @@ def ar_tag_filter(msg):
                            axis=0, weights=confidences)
             )
             seen_tags[tag_id] = Pose(filt_point, filt_quat)
+            del raw_tags[tag_id]
     global scan_counter
     scan_counter += 1
     scan_cv.release()
