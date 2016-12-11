@@ -12,7 +12,7 @@ from follow.srv import *
 # Table dimensions in meters
 dim = np.array([0.5, 1])
 # x and y FOV
-fov = np.array([0.2, 0.2])
+fov = np.array([0.20, 0.20])
 # Number of lengthwise scans of table
 n_scans = np.ceil(dim/fov).astype(int)
 nx, ny = n_scans
@@ -37,8 +37,8 @@ translate_server = None
 # If a tag is kept from one read to the next, adds list of AlvarMarker for that tag
 raw_tags = defaultdict(list) # tag number: [(confidence, Position, Orientation), ...]
 # Once a tag in raw_tags has a count of REQUIRED_COUNT, it's added to seen_tags
-REQUIRED_COUNT = 3
-MAX_SCANS = REQUIRED_COUNT+2
+REQUIRED_COUNT = 2
+MAX_SCANS = REQUIRED_COUNT*2
 seen_tags = dict() # tag number: Pose
 # Counts scans completed at any one location
 scan_counter = 0
@@ -54,12 +54,10 @@ def hold_scan():
     scan_call_in_progress = True
     while scan_counter < MAX_SCANS:
         # Release lock and block
-        print 'waiting...'
         scan_cv.wait()
-        print 'waited'
         # Wait returns with lock acquired
     # Exits with cv acquired
-    print seen_tags
+    print seen_tags.keys()
     print 'Finished one location'
     scan_call_in_progress = False
 
@@ -84,7 +82,6 @@ def handle_scan(request):
     """
     print('Scanning from service...')
     scan_cv.acquire()
-    print 'Lock acquired'
     origin = np.array(request.tableCenter)
     x0, y0 = origin - (dim/2)
 
@@ -118,6 +115,9 @@ def handle_scan(request):
             hold_scan()
 
         direction *= -1
+
+    next_pose.position.x, next_pose.position.y = origin
+    move_to_position(next_pose)
 
     scan_cv.release()
     # Converts seen_tags dictionary to [(1, 2, ...), (Pose1, Pose2, ...)]
@@ -153,7 +153,7 @@ def ar_tag_filter(msg):
                 del raw_tags[old_tag_id]
         # Add all poses seen
         for (tag_id, pose) in current_tags:
-            print tag_id, pose.pose.position.x, pose.pose.position.y
+            print 'New tag:', tag_id, pose.pose.position.x, pose.pose.position.y
 
             pose = translate_server(pose, 'base').output_pose_stamped
             tag_list = raw_tags[tag_id]
@@ -174,7 +174,7 @@ def ar_tag_filter(msg):
                 seen_tags[tag_id] = Pose(filt_point, filt_quat)
                 del raw_tags[tag_id]
     scan_counter += 1
-    print 'Scan counter now is:',scan_counter
+    print 'Scan counter:',scan_counter
     scan_cv.notify()
     scan_cv.release()
 
