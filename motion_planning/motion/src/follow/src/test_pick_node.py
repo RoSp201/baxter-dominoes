@@ -61,7 +61,7 @@ def follow(msg):
         #just general pose to place tag at for testing purposes
         goal_pose = PoseStamped()
         goal_pose.header.frame_id = "base"
-        goal_pose.pose.position.x = 1.0
+        goal_pose.pose.position.x = 0.75
         goal_pose.pose.position.y = 0.0
         goal_pose.pose.position.z = 0.20
         goal_pose.pose.orientation.x = 0.0
@@ -71,7 +71,7 @@ def follow(msg):
 
         start_pose = PoseStamped()
         start_pose = resp.output_pose_stamped
-        start_pose.pose.position.z += 0.10 
+        #start_pose.pose.position.z 
 
         #TEST: See if pick and place service works correctly
         rospy.wait_for_service("pick_n_place_server")
