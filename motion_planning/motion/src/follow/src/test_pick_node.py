@@ -15,7 +15,7 @@ from follow.srv import Translate, PickNPlace
 
 global target_tag
 
-def test(msg):
+def follow(msg):
     
     marker = None
     for m in msg.markers:
@@ -31,11 +31,11 @@ def test(msg):
         print "\nCamera pose of AR tag: \n", marker.pose.pose
 
         #TEST: Test new translate coordinates service for ar tag to base frame, returns transformed PoseStamped()
-        rospy.wait_for_service("pose_translate_server")
-        resp = None
+        rospy.wait_for_service("translate_server")
+        resp = PoseStamped()
         try:
-            translate = rospy.ServiceProxy("pose_translate_server", Translate)
-            resp = translate(marker.pose, 'left_hand_camera')
+            translate = rospy.ServiceProxy("translate_server", Translate)
+            resp = translate(marker.pose, 'left_hand_camera_axis')
             print "\nTransformed base pose of AR tag: \n", resp.output_pose_stamped.pose
             rospy.sleep(1.0)
         except rospy.ServiceException, e:
@@ -63,7 +63,7 @@ def test(msg):
         goal_pose.header.frame_id = "base"
         goal_pose.pose.position.x = 1.0
         goal_pose.pose.position.y = 0.0
-        goal_pose.pose.position.z = 0.10
+        goal_pose.pose.position.z = 0.20
         goal_pose.pose.orientation.x = 0.0
         goal_pose.pose.orientation.y = -1.0
         goal_pose.pose.orientation.z = 0.0
@@ -92,7 +92,7 @@ def test(msg):
 def test_pick_node():
 
     rospy.init_node("test_pick_node", anonymous=True)
-    rospy.Subscriber("ar_pose_marker", AlvarMarkers, test)
+    rospy.Subscriber("ar_pose_marker", AlvarMarkers, follow)
     rospy.spin()
 
 

@@ -58,7 +58,7 @@ def handle_translate(coords):
         rbt = arp.return_rbt(trans=trans, rot=rot)
         
         #original method if above function doesn't work properly
-        base_coords = rbt.dot(coords_cam_frame)
+        base_coords = rbt.dot(input_coords)
         base_coords = base_coords.reshape(4,1)
         x2 = base_coords.item(0)
         y2 = base_coords.item(1)
@@ -80,7 +80,7 @@ def handle_translate(coords):
         #if want new method, just uncomment line below and switch out:
         #return base_gripper_pose_stamped
 
-        return return output_pose 
+        return output_pose_stamped 
 
 
 def translate_server():

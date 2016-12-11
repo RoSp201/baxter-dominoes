@@ -21,8 +21,8 @@ def handle_pick_n_place(msg):
     scene = PlanningSceneInterface()
     left_arm = MoveGroupCommander('left_arm')
     left_arm.set_planner_id('RRTConnectkConfigDefault')
-    left_arm.set_planning_time(10)
-    left_gripper = baxter_gripper.Gripper('left')
+    left_arm.set_planning_time(20)
+    left_gripper = baxter_gripper.Gripper("left")
     left_arm.allow_replanning(True)
     left_gripper.set_vacuum_threshold(2.0)
     left_arm.set_end_effector_link("left_gripper")
@@ -105,10 +105,8 @@ def handle_pick_n_place(msg):
     goal6.orientation.w = 0.0
 
     #move back to staging position in hand area, includes reset rotation
-    goal7 = msg.hand_domino
-    goal7.position.z = 0.25
-
-    print("starting pose of eof: {}".format(left_arm.get_current_pose("left_gripper")))
+    goal7 = msg.hand_domino.pose
+    goal7.pose.position.z = 0.25
 
     waypoints = []
     waypoints.append(goal1)
