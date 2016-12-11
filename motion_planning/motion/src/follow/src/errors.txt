@@ -1,0 +1,5 @@
+joint trajectory action server:
+[ERROR] [WallTime: 1481484377.308370] /rsdk_position_w_id_joint_trajectory_action_server: Exceeded Max Goal Velocity Threshold for left arm
+pick_n_place:
+[ERROR] [WallTime: 1481486194.077278] incoming connection failed: unable to receive data from sender, check sender's logs for details
+
