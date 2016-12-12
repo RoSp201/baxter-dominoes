@@ -9,16 +9,46 @@ from ar_track_alvar_msgs.msg import AlvarMarkers
 from follow.srv import *
 
 
-# Table dimensions in meters
+# Continuously populated dictionary of seen AR tags
+# raw_tags contains each tag seen in the last tag reading
+# If a tag is kept from one read to the next, adds list of AlvarMarker for that tag
+raw_tags = defaultdict(list) # tag number: [(confidence, Position, Orientation), ...]
 
+scan_params = dict()
+
+FIRST_REQUIRED_COUNT = 2
+FIRST_Z = 0.1
+first_tags = dict() # tag number: Pose
+FIRST_FOV = np.array([0.1, 0.1])
+# Once a tag in raw_tags has a count of FIRST_REQUIRED_COUNT, it's added to first_tags
+scan_params['FIRST_SCAN'] = {
+    'REQUIRED_COUNT': FIRST_REQUIRED_COUNT,
+    'TAGS': first_tags,
+    'FOV': FIRST_FOV,
+    'Z': FIRST_Z
+}
+
+# After first scan, go back to tags and rescan with higher accuracy
+LAST_REQUIRED_COUNT = 5
+LAST_Z = 0.1
+last_tags = dict()
+LAST_FOV = np.array([0.1, 0.1])
+scan_params['LAST_SCAN'] = {
+    'REQUIRED_COUNT': LAST_REQUIRED_COUNT,
+    'TAGS': last_tags,
+    'FOV': LAST_FOV,
+    'Z': LAST_Z
+}
+
+cur_params = scan_params['FIRST_SCAN']
+
+# Table dimensions in meters
 # TODO: use the first dim when not debugging
 dim = np.array([0.4, 0.7])
 #dim = np.array([0.25, .5])
 
-# x and y FOV
-first_fov = np.array([0.1, 0.1])
 # Number of lengthwise scans of table
-n_scans = np.ceil(dim/first_fov).astype(int)
+n_scans = np.ceil(dim/FIRST_FOV).astype(int)
 nx, ny = n_scans
 # Space between lengthwise scans
 scan_spacing = dim/n_scans
@@ -26,48 +56,12 @@ dx, dy = scan_spacing
 print(n_scans)
 print(scan_spacing)
 
-# Constant scan height above the table
-
-z0 = 0.06
-
 # MoveGroupCommander arm object
 left_arm = None
 
 velocity_scale_factor = 0.1
 eef_step = 0.01
 
-# Continuously populated dictionary of seen AR tags
-# raw_tags contains each tag seen in the last tag reading
-# If a tag is kept from one read to the next, adds list of AlvarMarker for that tag
-raw_tags = defaultdict(list) # tag number: [(confidence, Position, Orientation), ...]
-
-
-scan_params = dict()
-
-FIRST_REQUIRED_COUNT = 2
-FIRST_MAX_SCANS = FIRST_REQUIRED_COUNT+2
-first_tags = dict() # tag number: Pose
-# Once a tag in raw_tags has a count of FIRST_REQUIRED_COUNT, it's added to first_tags
-scan_params['FIRST_SCAN'] = {
-    'REQUIRED_COUNT': FIRST_REQUIRED_COUNT,
-    'MAX_SCANS': FIRST_MAX_SCANS,
-    'TAGS': first_tags,
-    'FOV': first_fov
-}
-
-# After first scan, go back to tags and rescan with higher accuracy
-LAST_REQUIRED_COUNT = 5
-LAST_MAX_SCANS = LAST_REQUIRED_COUNT+2
-seen_tags = dict()
-last_fov = np.array([0.1, 0.1])
-scan_params['LAST_SCAN'] = {
-    'REQUIRED_COUNT': LAST_REQUIRED_COUNT,
-    'MAX_SCANS': LAST_MAX_SCANS,
-    'TAGS': seen_tags,
-    'FOV': last_fov
-}
-
-cur_params = scan_params["FIRST_SCAN"]
 
 # Counts scans completed at any one location
 scan_counter = 0
@@ -79,9 +73,11 @@ scan_call_in_progress = False
 def hold_scan():
     # Enters with cv acquired
     global scan_counter, scan_call_in_progress
+    raw_tags.clear()
     scan_counter = 0
     scan_call_in_progress = True
-    while scan_counter < FIRST_MAX_SCANS:
+    while ((scan_counter < cur_params['REQUIRED_COUNT']) or
+           (raw_tags)):
         # Release lock and block
         scan_cv.wait()
         # Wait returns with lock acquired
@@ -111,6 +107,19 @@ def grid_table(table_center):
     return points
 
 
+def scan_points(scan_xy):
+    next_xy = scan_xy[0, :]
+    next_point = Point(next_xy[0], next_xy[1], cur_params['Z'])
+    next_quat = Quaternion(0, -1, 0, 0)
+    next_pose = Pose(next_point, next_quat)
+
+    for move_count in range(scan_xy.shape[0]):
+        next_xy = scan_xy[move_count, :]
+        next_pose.position.x, next_pose.position.y = next_xy
+        move_to_position(next_pose)
+        hold_scan()
+
+
 def handle_scan(request):
     """
     Scan.srv format:
@@ -137,40 +146,20 @@ def handle_scan(request):
         val['TAGS'].clear()
 
     cur_params = scan_params['FIRST_SCAN']
-
     table_center = np.array(request.tableCenter)
-    scan_positions = grid_table(table_center)
-
-    # Move Baxter's camera to the front right scan location
-    next_xy = scan_positions[0, :]
-    next_point = Point(next_xy[0], next_xy[1], z0)
-    next_quat = Quaternion(0, -1, 0, 0)
-    next_pose = Pose(next_point, next_quat)
-
-    for move_count in range(scan_positions.shape[0]):
-        next_xy = scan_positions[move_count, :]
-        next_pose.position.x, next_pose.position.y = next_xy
-        move_to_position(next_pose)
-        hold_scan()
+    scan_xy = grid_table(table_center)
+    scan_points(scan_xy)
+    print('FIRST SCAN FOUND {}', str(first_tags.keys()))
 
     cur_params = scan_params['LAST_SCAN']
-
-    scan_positions = np.array([(pose.position.x, pose.position.y)
-                               for pose in first_tags.values()])
-
-    for move_count in range(scan_positions.shape[0]):
-        next_xy = scan_positions[move_count, :]
-        next_pose.position.x, next_pose.position.y = next_xy
-        move_to_position(next_pose)
-        hold_scan()
-
-    #next_pose.pose.position.x, next_pose.pose.position.y = origin
-    #move_to_position(next_pose)
+    scan_xy = np.array([(pose.position.x, pose.position.y)
+                        for pose in first_tags.values()])
+    scan_points(scan_xy)
+    print('LAST SCAN FOUND {}', str(last_tags.keys()))
 
     scan_cv.release()
-    # Converts seen_tags dictionary to [(1, 2, ...), (Pose1, Pose2, ...)]
-    print(seen_tags)
-    return zip(*seen_tags.items())
+    # Converts last_tags dictionary to [(1, 2, ...), (Pose1, Pose2, ...)]
+    return zip(*last_tags.items())
 
 
 def ar_tag_filter(msg):
@@ -207,19 +196,20 @@ def ar_tag_filter(msg):
             if not all(np.abs(np.array([pose.pose.position.x, pose.pose.position.y])) <  cur_params['FOV']/2):
                 continue
 
-            rospy.wait_for_service("translate_server")
-            print("try to transform coordinates")
+            rospy.wait_for_service('translate_server')
+            print('try to transform coordinates')
             try:
-                translate_server = rospy.ServiceProxy("translate_server", Translate)
+                translate_server = rospy.ServiceProxy('translate_server', Translate)
                 pose = translate_server(pose, 'base').output_pose_stamped
             except rospy.ServiceException as e:
-                print("Service call failed: %s" % e)
-            print("coordinates successfully transformed.")
-            print("Pose position: {} {}".format(pose.pose.position.x, pose.pose.position.y))
+                print('Service call failed: %s' % e)
+            print('coordinates successfully transformed.')
+            print('Pose position: {} {}'.format(pose.pose.position.x, pose.pose.position.y))
             tag_list = raw_tags[tag_id]
             tag_list.append((pose.pose.position, pose.pose.orientation))
             # If pose seen enough times, average pose information and add to tag dict
             if len(tag_list) == cur_params['REQUIRED_COUNT']:
+                print('Moving tag {} to filtered list.')
                 positions, orientations = zip(*tag_list)
                 avg_pos = np.mean(
                     np.array([(pos.x, pos.y, pos.z) for pos in positions]),
