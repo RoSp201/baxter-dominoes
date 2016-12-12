@@ -227,7 +227,11 @@ class Player:
             return newdoms
 
     def get_next_domino(self):
-        return self.scan_for_dominoes(1)[0]
+        dom = self.scan_for_dominoes(1)[0]
+        if dom:
+            return dom[0]
+        else:
+            return self.get_next_domino()
 
     def call_scan(self):
         tags, poses= self.blatnerize()
