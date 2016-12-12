@@ -42,26 +42,11 @@ scan_params['LAST_SCAN'] = {
 
 cur_params = scan_params['FIRST_SCAN']
 
-# Table dimensions in meters
-# TODO: use the first dim when not debugging
-dim = np.array([0.4, 0.7])
-#dim = np.array([0.25, .5])
-
-# Number of lengthwise scans of table
-n_scans = np.ceil(dim/FIRST_FOV).astype(int)
-nx, ny = n_scans
-# Space between lengthwise scans
-scan_spacing = dim/n_scans
-dx, dy = scan_spacing
-print(n_scans)
-print(scan_spacing)
-
 # MoveGroupCommander arm object
 left_arm = None
 
 velocity_scale_factor = 0.1
 eef_step = 0.01
-
 
 # Counts scans completed at any one location
 scan_counter = 0
@@ -87,8 +72,15 @@ def hold_scan():
     scan_call_in_progress = False
 
 
-def grid_table(table_center):
-    front_right_corner = table_center - (dim/2)
+def grid_table(table_center, table_size):
+    # Number of lengthwise scans of table
+    n_scans = np.ceil(table_size/cur_params['FOV']).astype(int)
+    nx, ny = n_scans
+    scan_spacing = table_size/n_scans # Space between lengthwise scans
+    dx, dy = scan_spacing
+    print(n_scans)
+    print(scan_spacing)
+    front_right_corner = table_center - (table_size/2)
     next_xy = front_right_corner + (scan_spacing/2)
     points = np.zeros((nx*ny, 2))
     points[0, :] = next_xy
@@ -146,7 +138,7 @@ def handle_scan(request):
         val['TAGS'].clear()
 
     cur_params = scan_params['FIRST_SCAN']
-    table_center = np.array(request.tableCenter)
+    table_center = np.array(request.tableCenter, request.tableSize)
     scan_xy = grid_table(table_center)
     scan_points(scan_xy)
     print('FIRST SCAN FOUND {}', str(first_tags.keys()))
