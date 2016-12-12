@@ -5,10 +5,14 @@ from sensor_msgs.msg import Image
 def republish(msg):
     """Node that publishes camera feed to baxter's face screen topic
     """
-
     display_publisher.publish(msg)
 
-rospy.init_node("camera_feed_face")
-display_publisher = rospy.Publisher("/robot/xdisplay", Image, queue_size=10)
-sub = rospy.Subscriber("/baxter_image", Image, republish, None, 1)
-rospy.spin()
+
+def camera_feed_face():
+	rospy.init_node("camera_feed_face")
+	display_publisher = rospy.Publisher("/robot/xdisplay", Image, queue_size=10)
+	sub = rospy.Subscriber("/baxter_image", Image, republish, None, 1)
+	rospy.spin()
+
+if __name__ == "__main__":
+    camera_feed_face()
