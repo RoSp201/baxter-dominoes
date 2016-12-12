@@ -40,8 +40,8 @@ def handle_translate(coords):
             #transform frame coords, so with respect to base frame 
             #note, can use ar tag frame, so that gripper will always be oriented correctly with the ar tag it is picking up
 
-            tf_listener.waitForTransform("base", "left_hand_camera", rospy.Time(0), rospy.Duration(4.0))
-            transform = tf_listener.lookupTransform("base", "left_hand_camera", rospy.Time(0))
+            tf_listener.waitForTransform("base", "left_hand_camera_axis", rospy.Time(0), rospy.Duration(4.0))
+            transform = tf_listener.lookupTransform("base", "left_hand_camera_axis", rospy.Time(0))
             (trans, rot) = transform
             '''tf_listener.waitForTransform("base", frame, rospy.Time(0), rospy.Duration(4.0))
             transform = tf_buffer.lookup_transform("base",
