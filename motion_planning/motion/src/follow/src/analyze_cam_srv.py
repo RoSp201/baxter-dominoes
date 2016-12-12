@@ -24,6 +24,8 @@ class DominoService:
     #Subscribe to the image topic
     rospy.Subscriber("/cameras/left_hand_camera/image", Image, self.imgReceived)
     #rospy.Subscriber("/usb_cam/image_raw", Image, self.imgReceived)
+    #rospy.Subscriber("/testimg", Image, self.imgReceived)
+
 
     #Create last image publisher
     self.img_pub = rospy.Publisher('baxter_image', Image, queue_size=10)
@@ -49,7 +51,7 @@ class DominoService:
 
     # Convert image to mat, grayscale, blur , and apply canny or threshold filter
     orig = cv_bridge.CvBridge().imgmsg_to_cv2(self.lastImage, desired_encoding="passthrough")
-    cv2.imwrite( "../img.jpg", orig); #for offline debugging
+    cv2.imwrite( "../img.png", orig); #for offline debugging
 
     gray = cv2.cvtColor(orig, cv2.COLOR_BGR2GRAY)
     blur = cv2.GaussianBlur(gray,(9,9),0)
