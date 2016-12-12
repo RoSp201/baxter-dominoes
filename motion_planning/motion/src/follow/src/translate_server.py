@@ -53,7 +53,7 @@ def handle_translate(coords):
         except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
             continue
 
-        print "\nCam coordinates: ", x, y, z
+        print "Cam coordinates: ", x, y, z
         found = True
         rbt = arp.return_rbt(trans=trans, rot=rot)
         
@@ -63,7 +63,7 @@ def handle_translate(coords):
         x2 = base_coords.item(0)
         y2 = base_coords.item(1)
         z2 = base_coords.item(2)
-        print "\nBase coordinates: ", x2, y2, z2
+        print "Base coordinates: ", x2, y2, z2
         
         output_pose_stamped = PoseStamped()
         output_pose_stamped.header.frame_id = "base"

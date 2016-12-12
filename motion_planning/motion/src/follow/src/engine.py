@@ -43,7 +43,7 @@ TAGS_TO_PIPS = {
                 18: (5, 4),
                 19: (6, 5),
                 20: (6, 4),
-                31: (0, 0),
+                HAND_AR_NUM: (0, 0),
                 }
 
 TABLE_CENTER = [0.6, .4]
@@ -80,7 +80,7 @@ class Player:
     def pick_from_boneyard(self):
         """Wait for a player to give us a domino"""
         # Make baxter signal that he can't make a move by nodding.
-        baxter_interface.Head().command_nod()
+        #baxter_interface.Head().command_nod()
         print "\nBaxter nodded in request for a new domino."
         rospy.sleep(5.0)
         domino = None
@@ -185,8 +185,8 @@ class Player:
         domino_to_move_to[0].sides[move[3]] = domino_to_move
         self.turns_taken += 1
         print "Take turn successful"
-        baxter_interface.Head().command_nod()
-        baxter_interface.Head().command_nod()
+        #baxter_interface.Head().command_nod()
+        #baxter_interface.Head().command_nod()
 
     def move_domino(self, domino_to_move, move_to, rot=""):
         #move_to must be a posed stamp object
@@ -370,5 +370,4 @@ class Domino:
         #if "side" == "right":
         #    temp.pose.position.y -= HORIZ_VERT_OFFSET
 
-if __name__ == "__main__":
-    Player()
+Player()
