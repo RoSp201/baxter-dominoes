@@ -17,7 +17,7 @@ CTRL+F your name in all caps for anything I asked you to do.
 # Constants to figure out
 VERT_VERT_OFFSET = .13
 HORIZ_VER_OFFSET = 0xdaddb0dd
-HAND_SPACE_OFFSET = .03
+HAND_SPACE_OFFSET = .10 #0.03
 HAND_AR_NUM = 31
 NUM_PLAYERS = 2
 TAGS_TO_PIPS = {
@@ -42,7 +42,7 @@ TAGS_TO_PIPS = {
                 18: (5, 4),
                 19: (6, 5),
                 20: (6, 4),
-                HAND_AR_NUM: (0, 0),
+                31: (0, 0),
                 }
 
 TABLE_CENTER = [0.6, .4]
@@ -55,6 +55,7 @@ class Player:
         self.game_init()
 
     def game_init(self):
+        print "\n\n*** START OF GAME ***\n\n"
         print "Scanning for the hand"
         # Find hand AR tag and populate both seen and hand with the dominoes in our hand.
         self.scan_for_dominoes()
@@ -66,39 +67,42 @@ class Player:
         i = 1
         for domino in self.hand:
             hand_coords = copy.deepcopy(self.hand_coords)
-            hand_coords.pose.position.y -= i * HAND_SPACE_OFFSET
+            hand_coords.pose.position.y -= (i * HAND_SPACE_OFFSET)
             # move_domino takes a domino and a pose stamped.
             self.move_domino(domino, hand_coords)
         self.seen[HAND_AR_NUM] = temp
-        print "Scanning for the spinner"
+        print "\nNow scanning for the spinner..."
         self.spinner = self.get_next_domino()
+        print "\nSpinner was recorded. Now starting main game loop..."
         self.game_loop()
 
     def pick_from_boneyard(self):
         """Wait for a player to give us a domino"""
         # Make baxter signal that he can't make a move by nodding.
         baxter_interface.Head().command_nod()
-        rospy.sleep(5)
+        print "\nBaxter nodded in request for a new domino."
+        rospy.sleep(5.0)
         domino = None
         while not domino:
             domino = self.get_next_domino()
-            sleep(5)
-        pos_in_hand = self.add_domino_to_hand((domino))
+            sleep(5.0)
+        pos_in_hand = self.add_domino_to_hand((domino))    #TODO: why is domino nested in parens??
         hand_coords = copy.deepcopy(self.hand_base)
         # This assumes that Baxter's hand starts in the closest-left corner of the table and it grows to the right.
-        hand_coords.position.y -= (pos_in_hand + 1) * HAND_SPACE_OFFSET
+        hand_coords.position.y -= ((pos_in_hand + 1) * HAND_SPACE_OFFSET)
         self.move_domino(domino, hand_coords)
 
     def add_domino_to_hand(self, domino):
         i = 0
         while i < len(self.hand) and self.hand[i]:
             i += 1
-        self.hand.insert(i, domino)
+        self.hand.insert(i, domino)    #TODO: Should this be indented??
         return i
 
     def game_loop(self):
         game_ended = False
         while not game_ended:
+            #while it's baxter's turn
             while self.turns_taken % NUM_PLAYERS == 0:
                 rospy.sleep(5)
                 newdoms = self.scan_for_dominoes()
@@ -128,12 +132,12 @@ class Player:
                     self.turns_taken += 1
 
             if self.turns_taken % NUM_PLAYERS:
-                print "Taking turn"
+                print "\nBaxter Taking turn..."
                 self.take_turn()
 
     def take_turn(self):
         """Analyze the previously sensed board state and make the best greedy move if it exists.
-        If it doesn't, pick from the boneyard but nodding to the players and waiting for a new tile
+        If it doesn't, pick from the boneyard by nodding to the players and waiting for a new tile
         to move into the hand area."""
         # Compute the move to get:
         open_spots = self.spinner.get_open_spots([])
@@ -184,12 +188,9 @@ class Player:
 
     def move_domino(self, domino_to_move, move_to, rot=""):
         #move_to must be a posed stamp object
-        #move_to = unmade_translate_coords(move_to)
         #get domino transformed coordinates
-        #domino to move.location needs to be a poseStamped object
         #third arg of pick_n_place is the direction that baxter needs to rotate the domino on the board.
-        # place the domino on the board.
-        print "try to place domino"
+        print "\nTry to place domino on board using pick_n_place..."
         rospy.wait_for_service("pick_n_place_server")
         try:
             pick_n_place = rospy.ServiceProxy("pick_n_place_server", PickNPlace)
@@ -204,7 +205,7 @@ class Player:
             return response
         except rospy.ServiceException, e:
             print "Service call failed: %s" % e
-        print "domino placed successfully."
+        print "Domino was placed successfully."
 
     def scan_for_dominoes(self, num_dominoes = 0):
         """Finds all new dominoes currently detectable and enforces that we see no more than num_dominoes new ones.
@@ -234,17 +235,17 @@ class Player:
         for i in range(len(tags)):
             stamped = PoseStamped()
             stamped.pose = poses[i]
-            # This is to prevent bugs.
-            stamped.pose.orientation.x = 0
-            stamped.pose.orientation.y = -1
-            stamped.pose.orientation.z = 0
-            stamped.pose.orientation.w = 0
+            # This is to prevent bugs in translate_server.
+            stamped.pose.orientation.x = 0.0
+            stamped.pose.orientation.y = -1.0
+            stamped.pose.orientation.z = 0.0
+            stamped.pose.orientation.w = 0.0
             dominoes.append(Domino(TAGS_TO_PIPS[tags[i]], tags[i], stamped))
         return dominoes
 
     def blatnerize(self):
         rospy.wait_for_service("scan_server")
-        print "try to do a scan"
+        print "\nTry to do a scan"
         try:
             scan = rospy.ServiceProxy("scan_server", Scan, persistent=True)
             response = scan(TABLE_CENTER)
@@ -363,5 +364,5 @@ class Domino:
         #if "side" == "right":
         #    temp.pose.position.y -= HORIZ_VERT_OFFSET
 
-
-Player()
+if __name__ == "__main__":
+    Player()
