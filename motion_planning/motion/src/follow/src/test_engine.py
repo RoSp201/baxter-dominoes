@@ -55,7 +55,7 @@ moveloc = Pose()
 moveloc.position.x = spinnerloc.position.x
 moveloc.position.y = spinnerloc.position.y - VERT_VERT_OFFSET
 moveloc.position.z = spinnerloc.position.z
-DUMMY_SCANS = [((31, 0, 5), [Pose(), Pose(), Pose()]), ([2], [spinnerloc]), ([12], [moveloc])]
+DUMMY_SCANS = [((31, 20, 5), [Pose(), Pose(), Pose()]), ([2], [spinnerloc]), ([12], [moveloc]), ([0], [Pose()])]
 
 
 class Player:
@@ -94,11 +94,11 @@ class Player:
         domino = None
         while not domino:
             domino = self.get_next_domino()
-            sleep(5)
+            rospy.sleep(5)
         pos_in_hand = self.add_domino_to_hand(domino)
-        hand_coords = copy.deepcopy(self.hand_base)
+        hand_coords = copy.deepcopy(self.hand_coords)
         # This assumes that Baxter's hand starts in the closest-left corner of the table and it grows to the right.
-        hand_coords.position.y -= (pos_in_hand + 1) * HAND_SPACE_OFFSET
+        hand_coords.pose.position.y -= (pos_in_hand + 1) * HAND_SPACE_OFFSET
         self.move_domino(domino, hand_coords)
 
     def add_domino_to_hand(self, domino):
@@ -161,12 +161,16 @@ class Player:
         open_spots = self.spinner.get_open_spots([])
         assert(open_spots)
         move = self.best_move_greedy(self.hand, open_spots)
+        print "MOVE: {}".format(move)
+        print "HAND: {}".format(self.hand)
         while move[0] == -1:
             # If we can't find a move, we draw.
             self.pick_from_boneyard()
             self.turns_taken += 1
             move = self.best_move_greedy(self.hand, open_spots)
+
         domino_to_move = self.hand[move[0]]
+        self.hand[move[0]] = None
         domino_to_move_to = open_spots[move[1]]
         # Calculate which direction to rotate the domino.
         LR = domino_to_move_to[0].get_domino_direction()
@@ -226,7 +230,8 @@ class Player:
             response = pick_n_place(domino_to_move.pose_st, move_to, rot)
             return response
         except rospy.ServiceException, e:
-            print "Service call failed: %s" % e
+            print "ERR: Service call failed: %s" % e
+        domino_to_move.pos = move_to
         print "domino placed successfully."
 
         # We don't have to add the domino to seen because we've already seen it in our hand.
@@ -283,6 +288,8 @@ class Player:
             for i in range(len(hand)):
                 print(open_spots[spot][0])
                 curr = hand[i]
+                if not curr:
+                    continue
                 print(curr.pips)
                 currscore = curr.score()
                 if currscore < hiscore:
