@@ -1,0 +1,3 @@
+LH base:
+Position: .72 .35 -.13
+orientation: .99, -.1, .04
