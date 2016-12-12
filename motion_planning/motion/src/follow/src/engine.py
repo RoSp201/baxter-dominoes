@@ -227,7 +227,7 @@ class Player:
             return newdoms
 
     def get_next_domino(self):
-        dom = self.scan_for_dominoes(1)[0]
+        dom = self.scan_for_dominoes(1)
         if dom:
             return dom[0]
         else:
