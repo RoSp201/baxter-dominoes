@@ -11,8 +11,8 @@ from follow.srv import *
 
 # Table dimensions in meters
 # TODO: use the first dim when not debugging
-#dim = np.array([0.5, 0.75])
-dim = np.array([0.25, .5])
+dim = np.array([0.3, 0.6])
+#dim = np.array([0.25, .5])
 # x and y FOV
 fov = np.array([0.15, 0.15])
 # Number of lengthwise scans of table
@@ -25,7 +25,7 @@ print n_scans
 print scan_spacing
 
 # Constant scan height above the table
-z0 = 0.10
+z0 = 0.05
 
 # MoveGroupCommander arm object
 left_arm = None
@@ -39,7 +39,7 @@ translate_server = None
 # If a tag is kept from one read to the next, adds list of AlvarMarker for that tag
 raw_tags = defaultdict(list) # tag number: [(confidence, Position, Orientation), ...]
 # Once a tag in raw_tags has a count of REQUIRED_COUNT, it's added to seen_tags
-REQUIRED_COUNT = 2
+REQUIRED_COUNT = 5
 MAX_SCANS = REQUIRED_COUNT*2
 seen_tags = dict() # tag number: Pose
 # Counts scans completed at any one location

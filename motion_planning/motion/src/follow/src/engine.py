@@ -17,7 +17,7 @@ CTRL+F your name in all caps for anything I asked you to do.
 
 # Constants to figure out
 VERT_VERT_OFFSET = .13
-HORIZ_VER_OFFSET = 0xdaddb0dd
+HORIZ_VER_OFFSET = 0.13
 HAND_SPACE_OFFSET = .13 #0.03
 HAND_AR_NUM = 31
 NUM_PLAYERS = 2
@@ -69,6 +69,7 @@ class Player:
         for domino in self.hand:
             hand_coords = copy.deepcopy(self.hand_coords)
             hand_coords.pose.position.y -= (i * HAND_SPACE_OFFSET)
+            i += 1
             # move_domino takes a domino and a pose stamped.
             self.move_domino(domino, hand_coords)
         self.seen[HAND_AR_NUM] = temp
