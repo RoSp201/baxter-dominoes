@@ -9,6 +9,7 @@ import cv_bridge
 first = True
 
 def imgReceived(message):
+    "this test was for tuning parameters for cv, some "
     print "______________________________"
     img = cv_bridge.CvBridge().imgmsg_to_cv2(message, desired_encoding="passthrough")
     contourArea = cv2.getTrackbarPos('contourArea','settings')
@@ -31,7 +32,7 @@ def imgReceived(message):
     cont2 = []
     for i in range(len(contours)):
         ((cx,cy),(w,h),angle) = rect = cv2.minAreaRect(contours[i])
-        if w*h < 100000 and w*h > 60000:
+        if w*h < 10000000 and w*h > 10000 and (abs(2*w - h) > 20 or abs(2*h - w) > 20) and (abs(abs(angle) - 90) < 20 or abs(angle) < 20) :
             cont2 += [contours[i]]
     print cont2
     #cont2 = [cont for cont in contours if cv2.contourArea(cont)>contourArea and cv2.contourArea(cont)<100000]
@@ -96,7 +97,7 @@ def imgReceived(message):
 
 
     cv2.drawContours(orig, cont2, -1, (100,100,100), 10)
-    cv2.imshow('img',orig)
+    cv2.imshow('img',img)
     cv2.waitKey(1)
 
 

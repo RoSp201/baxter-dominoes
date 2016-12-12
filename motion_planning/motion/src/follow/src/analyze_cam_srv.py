@@ -22,8 +22,8 @@ class DominoService:
     rospy.init_node('cam_listener')
 
     #Subscribe to the image topic
-    rospy.Subscriber("/cameras/left_hand_camera/image", Image, self.imgReceived)
-    #rospy.Subscriber("/usb_cam/image_raw", Image, self.imgReceived)
+    #rospy.Subscriber("/cameras/left_hand_camera/image", Image, self.imgReceived)
+    rospy.Subscriber("/usb_cam/image_raw", Image, self.imgReceived)
 
     #Create last image publisher
     self.img_pub = rospy.Publisher('baxter_image', Image, queue_size=10)
@@ -38,7 +38,7 @@ class DominoService:
 
   def imgReceived(self, message):
     self.lastImage = message
-    self.analyzeImage([50000, [20, 20], [10, 50, 20, 0 ,35]])
+    self.analyzeImage([50000, [40, 50], [10, 50, 20, 0 ,35]])
 
   def analyzeImage(self, params):
     # Collect CV params
@@ -48,6 +48,7 @@ class DominoService:
 
     # Convert image to mat, grayscale, blur , and apply canny or threshold filter
     orig = cv_bridge.CvBridge().imgmsg_to_cv2(self.lastImage, desired_encoding="passthrough")
+    cv2.imwrite( "../img.jpg", orig);
     if self.counter == 0:
         self.copy = orig.copy()
     gray = cv2.cvtColor(orig, cv2.COLOR_BGR2GRAY)
@@ -55,7 +56,7 @@ class DominoService:
     img = cv2.Canny(blur,cParams[0],cParams[1])
     #img = cv2.adaptiveThreshold(blur,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY,11,2)
     if self.counter == 0:
-        self.copy = img.copy()
+        self.copy = cv2.cvtColor(img.copy(), cv2.COLOR_GRAY2BGR)
 
     # Find domino contours
     contours, hierarchy = cv2.findContours(img,1,cv2.CHAIN_APPROX_SIMPLE)
@@ -63,7 +64,7 @@ class DominoService:
     for i in range(len(contours)):
         ((cx,cy),(w,h),angle) = rect = cv2.minAreaRect(contours[i])
         # THESE MIGHT NEED TO BE TUNED!
-        if w*h < 80000 and w*h > 60000 and w < 500 and h < 500 and (abs(abs(angle) - 90) < 10 or abs(angle) < 10) :
+        if w*h < 10000000 and w*h > 10000 and (abs(2*w - h) > 20 or abs(2*h - w) > 20) and (abs(abs(angle) - 90) < 20 or abs(angle) < 20) :
             dominoContour += [contours[i]]
     #dominoContour = [cont for cont in contours if cv2.contourArea(cont)>contourArea and cv2.contourArea(cont)<100000]
 
@@ -87,14 +88,14 @@ class DominoService:
         # Find coordinates and put in reasonable order
         box = cv2.cv.BoxPoints(rect)
         box = np.int0(box)
-        # box = np.array(sorted(box, key=lambda pt: pt[0]+pt[1]))
-        # if box[1][0] < box[2][0]:
-        #     temp = box[1].copy()
-        #     box[1] = box[2]
-        #     box[2] = temp
+        box = np.array(sorted(box, key=lambda pt: pt[0]+pt[1]))
+        if box[1][0] < box[2][0]:
+            temp = box[1].copy()
+            box[1] = box[2]
+            box[2] = temp
 
         # Publish cool looking image hopefully
-        cv2.drawContours(self.copy,[box],0,(255,0,255),10)
+        cv2.drawContours(self.copy,dominoContour,i,(255,0,0),10)
 
         # Transform Domino images
         pts1 = np.float32([box[0],box[1],box[2],box[3]])
@@ -106,7 +107,7 @@ class DominoService:
         vert = False
         if dom.shape[0] > dom.shape[1]:
             vert = True
-
+        cv2.imshow('img', dom)
         # Start countin' circles!
         circles = cv2.HoughCircles(dom, cv.CV_HOUGH_GRADIENT,1,hParams[0],param1=hParams[1],param2=hParams[2],minRadius=hParams[3],maxRadius=hParams[4])
         side1 = 0
@@ -124,6 +125,8 @@ class DominoService:
                         side1 += 1
                     else:
                         side2 += 1
+        font = cv2.FONT_HERSHEY_SIMPLEX
+        cv2.putText(self.copy,str(side1) + " | " + str(side2),(int(cx), int(cy)), font, 1,(255,0,255),2)
         # Add results to array
         response += [side1, side2, vert, cx, cy]
 
