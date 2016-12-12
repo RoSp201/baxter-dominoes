@@ -25,7 +25,7 @@ print n_scans
 print scan_spacing
 
 # Constant scan height above the table
-z0 = 0.08
+z0 = 0.05
 
 # MoveGroupCommander arm object
 left_arm = None

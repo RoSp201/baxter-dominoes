@@ -22,11 +22,11 @@ class DominoService:
     rospy.init_node('cam_listener')
 
     #Subscribe to the image topic
-    #rospy.Subscriber("/cameras/left_hand_camera/image", Image, self.imgReceived)
-    rospy.Subscriber("/usb_cam/image_raw", Image, self.imgReceived)
+    rospy.Subscriber("/cameras/left_hand_camera/image", Image, self.imgReceived)
+    #rospy.Subscriber("/usb_cam/image_raw", Image, self.imgReceived)
 
     #Create last image publisher
-    self.img_pub = rospy.Publisher('baxter_image', Image)
+    self.img_pub = rospy.Publisher('baxter_image', Image, queue_size=10)
 
     #Create analyze image service
     rospy.Service('domino_finder', DominoCoordSrv, self.analyzeMultipleImages)
@@ -54,7 +54,8 @@ class DominoService:
     blur = cv2.GaussianBlur(gray,(3,3),0)
     img = cv2.Canny(blur,cParams[0],cParams[1])
     #img = cv2.adaptiveThreshold(blur,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY,11,2)
-
+    if self.counter == 0:
+        self.copy = img.copy()
 
     # Find domino contours
     contours, hierarchy = cv2.findContours(img,1,cv2.CHAIN_APPROX_SIMPLE)
