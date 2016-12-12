@@ -25,7 +25,7 @@ print n_scans
 print scan_spacing
 
 # Constant scan height above the table
-z0 = 0.1
+z0 = 0.08
 
 # MoveGroupCommander arm object
 left_arm = None
@@ -157,20 +157,18 @@ def ar_tag_filter(msg):
                 del raw_tags[old_tag_id]
         # Add all poses seen
         for (tag_id, pose) in current_tags:
-            print 'New tag:', tag_id, pose.pose.position.x, pose.pose.position.y
+            #print 'New tag:', tag_id, pose.pose.position.x, pose.pose.position.y
 
 
             rospy.wait_for_service("translate_server")
-            posed_st = PoseStamped()
-            posed_st.pose = pose
             print "try to transform coordinates"
             try:
                 translate_server = rospy.ServiceProxy("translate_server", Translate)
-                pose = translate_server(posed_st, 'base').output_pose_stamped
+                pose = translate_server(pose, 'base').output_pose_stamped
             except rospy.ServiceException, e:
                 print "Service call failed: %s" % e
             print "coordinates successfully transformed."
-
+            print "Pose position: \n{}".format(pose.pose.position)
             tag_list = raw_tags[tag_id]
             tag_list.append((pose.pose.position, pose.pose.orientation))
             # If pose seen enough times, average pose information and add to seen_tags
@@ -197,11 +195,11 @@ def ar_tag_filter(msg):
 def move_to_position(goal_pose):
     plan, _ = left_arm.compute_cartesian_path(
         [goal_pose.pose],    # waypoints to follow with end
-        0.03,           # eef_step
+        0.01,           # eef_step
         0.0             # jump_threshold
     )
     left_arm.execute(plan)
-    rospy.sleep(0.5) #add this to see if baxter's action trajectory server will stop complaining about reaching max velocity threshold during scan.
+    rospy.sleep(1.0) #add this to see if baxter's action trajectory server will stop complaining about reaching max velocity threshold during scan.
 
 
 def init_motion():

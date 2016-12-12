@@ -157,7 +157,7 @@ def handle_pick_n_place(msg):
     (plan5, fraction) = left_arm.compute_cartesian_path(
                                waypoints,   # waypoints to follow with end 
                                0.01,        # eef_step
-                               0.001)         # jump_threshold
+                               0.0)         # jump_threshold
     print "fraction 5: ", fraction
     print "lowers gripper to place domino in final location, no rotation"
     left_arm.execute(plan5)
@@ -191,7 +191,6 @@ def handle_pick_n_place(msg):
     left_arm.execute(plan7)
     rospy.sleep(1.0)
     print("done.")
-    return 
 
 
 

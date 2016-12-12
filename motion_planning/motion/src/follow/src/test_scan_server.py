@@ -15,6 +15,7 @@ def test_scan_server():
 	tag_numbers, tag_poses = response.tagNumbers, response.arTagPoses
 	print 'Done with scan.'
 	print tag_numbers
+	print response.arTagPoses
 
 
 if __name__ == '__main__':
