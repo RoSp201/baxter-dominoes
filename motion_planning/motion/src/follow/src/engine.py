@@ -87,11 +87,11 @@ class Player:
         domino = None
         while not domino:
             domino = self.get_next_domino()
-            sleep(5.0)
+            rospy.sleep(5.0)
         pos_in_hand = self.add_domino_to_hand(domino)
-        hand_coords = copy.deepcopy(self.hand_base)
+        hand_coords = copy.deepcopy(self.hand_coords)
         # This assumes that Baxter's hand starts in the closest-left corner of the table and it grows to the right.
-        hand_coords.position.y -= ((pos_in_hand + 1) * HAND_SPACE_OFFSET)
+        hand_coords.pose.position.y -= ((pos_in_hand + 1) * HAND_SPACE_OFFSET)
         self.move_domino(domino, hand_coords)
 
     def add_domino_to_hand(self, domino):
@@ -152,6 +152,7 @@ class Player:
             self.pick_from_boneyard()
             move = self.best_move_greedy(self.hand, open_spots)
         domino_to_move = self.hand[move[0]]
+        self.hand[move[0]] = None
         domino_to_move_to = open_spots[move[1]]
         # Calculate which direction to rotate the domino.
         LR = domino_to_move_to[0].get_domino_direction()
@@ -208,6 +209,7 @@ class Player:
             return response
         except rospy.ServiceException, e:
             print "Service call failed: %s" % e
+            domino_to_move.pos = move_to
         print "Domino was placed successfully."
 
     def scan_for_dominoes(self, num_dominoes = 0):
@@ -271,6 +273,8 @@ class Player:
         for spot in range(len(open_spots)):
             for i in range(len(hand)):
                 curr = hand[i]
+                if not curr:
+                    continue
                 currscore = curr.score()
                 if currscore < hiscore:
                     continue
