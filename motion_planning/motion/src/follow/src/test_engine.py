@@ -122,7 +122,10 @@ class Player:
                     print(newdom)
                     print(spots)
                     spot = min(spots, key= lambda dom: norm(newdom.pose_st, dom[0].pose_st))
+                    if spot[0].sides[spot[1]]:
+                        print "ERR: found a domino at a side {} of domino {}, where a domino already exists.".format(spot[1], spot[0])
                     spot[0].sides[spot[1]] = newdom
+                    print "Domino appended at side {}".format(spot[1])
 
                     # Find out which side of the new domino just got added to
                     pips = None
@@ -133,8 +136,12 @@ class Player:
 
                     # Update the new domino's adjacent dominoes.
                     if newdom.pips[0] == pips:
+                        print "domino {} at top of newdom {}".format(newdom.tag, spot[0].tag)
+                        print "pips: {} and {}".format(newdom.pips[1], pips)
                         newdom.sides["top"] = spot[0]
                     elif newdom.pips[1] == pips:
+                        print "domino {} at bottom of newdom {}".format(newdom.tag, spot[0].tag)
+                        print "pips: {} and {}".format(newdom.pips[1], pips)
                         newdom.sides["bottom"] = spot[0]
                     else:
                         print "Invalid move detected."
@@ -154,11 +161,11 @@ class Player:
         open_spots = self.spinner.get_open_spots([])
         assert(open_spots)
         move = self.best_move_greedy(self.hand, open_spots)
-        if move[0] == -1:
+        while move[0] == -1:
             # If we can't find a move, we draw.
             self.pick_from_boneyard()
             self.turns_taken += 1
-            return
+            move = self.best_move_greedy(self.hand, open_spots)
         domino_to_move = self.hand[move[0]]
         domino_to_move_to = open_spots[move[1]]
         # Calculate which direction to rotate the domino.

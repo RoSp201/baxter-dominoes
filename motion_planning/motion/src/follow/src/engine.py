@@ -18,7 +18,7 @@ CTRL+F your name in all caps for anything I asked you to do.
 # Constants to figure out
 VERT_VERT_OFFSET = .13
 HORIZ_VER_OFFSET = 0xdaddb0dd
-HAND_SPACE_OFFSET = .10 #0.03
+HAND_SPACE_OFFSET = .13 #0.03
 HAND_AR_NUM = 31
 NUM_PLAYERS = 2
 TAGS_TO_PIPS = {
@@ -112,6 +112,8 @@ class Player:
                     norm = lambda p1, p2: math.sqrt((p1.pose.position.x - p2.pose.position.x)**2 + (p1.pose.position.y - p2.pose.position.y)**2)
 
                     spot = min(spots, key= lambda dom: norm(newdom.pose_st, dom[0].pose_st))
+                    if spot[0].sides[spot[1]]:
+                        print "ERR: found a domino at a spot where a domino already exists."
                     spot[0].sides[spot[1]] = newdom
 
                     # Find out which side of the new domino just got added to
@@ -144,11 +146,10 @@ class Player:
         open_spots = self.spinner.get_open_spots([])
         assert(open_spots)
         move = self.best_move_greedy(self.hand, open_spots)
-        if move[0] == -1:
+        while move[0] == -1:
             # If we can't find a move, we draw.
             self.pick_from_boneyard()
-            self.turns_taken += 1
-            return
+            move = self.best_move_greedy(self.hand, open_spots)
         domino_to_move = self.hand[move[0]]
         domino_to_move_to = open_spots[move[1]]
         # Calculate which direction to rotate the domino.
