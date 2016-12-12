@@ -11,7 +11,7 @@ from follow.srv import *
 
 # Table dimensions in meters
 # TODO: use the first dim when not debugging
-#dim = np.array([0.5, 1])
+#dim = np.array([0.5, 0.75])
 dim = np.array([0.25, .5])
 # x and y FOV
 fov = np.array([0.15, 0.15])
@@ -25,7 +25,7 @@ print n_scans
 print scan_spacing
 
 # Constant scan height above the table
-z0 = 0.05
+z0 = 0.10
 
 # MoveGroupCommander arm object
 left_arm = None

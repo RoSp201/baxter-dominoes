@@ -40,8 +40,8 @@ def handle_translate(coords):
             #transform frame coords, so with respect to base frame 
             #note, can use ar tag frame, so that gripper will always be oriented correctly with the ar tag it is picking up
 
-            tf_listener.waitForTransform("base", "left_hand_camera", rospy.Time(0), rospy.Duration(4.0))
-            transform = tf_listener.lookupTransform("base", "left_hand_camera", rospy.Time(0))
+            tf_listener.waitForTransform("base", "left_hand_camera_axis", rospy.Time(0), rospy.Duration(4.0))
+            transform = tf_listener.lookupTransform("base", "left_hand_camera_axis", rospy.Time(0))
             (trans, rot) = transform
             '''tf_listener.waitForTransform("base", frame, rospy.Time(0), rospy.Duration(4.0))
             transform = tf_buffer.lookup_transform("base",
@@ -53,7 +53,7 @@ def handle_translate(coords):
         except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
             continue
 
-        print "\nCam coordinates: ", x, y, z
+        print "Cam coordinates: ", x, y, z
         found = True
         rbt = arp.return_rbt(trans=trans, rot=rot)
         
@@ -63,7 +63,7 @@ def handle_translate(coords):
         x2 = base_coords.item(0)
         y2 = base_coords.item(1)
         z2 = base_coords.item(2)
-        print "\nBase coordinates: ", x2, y2, z2
+        print "Base coordinates: ", x2, y2, z2
         
         output_pose_stamped = PoseStamped()
         output_pose_stamped.header.frame_id = "base"
