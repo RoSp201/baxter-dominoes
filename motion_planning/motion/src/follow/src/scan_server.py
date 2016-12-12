@@ -12,11 +12,11 @@ from follow.srv import *
 # Table dimensions in meters
 
 # TODO: use the first dim when not debugging
-dim = np.array([0.3, 0.6])
+dim = np.array([0.4, 0.7])
 #dim = np.array([0.25, .5])
 
 # x and y FOV
-first_first_fov = np.array([0.2, 0.2])
+first_fov = np.array([0.1, 0.1])
 # Number of lengthwise scans of table
 n_scans = np.ceil(dim/first_fov).astype(int)
 nx, ny = n_scans
@@ -28,7 +28,7 @@ print(scan_spacing)
 
 # Constant scan height above the table
 
-z0 = 0.1
+z0 = 0.06
 
 # MoveGroupCommander arm object
 left_arm = None
@@ -56,7 +56,7 @@ scan_params['FIRST_SCAN'] = {
 }
 
 # After first scan, go back to tags and rescan with higher accuracy
-LAST_REQUIRED_COUNT = 4
+LAST_REQUIRED_COUNT = 5
 LAST_MAX_SCANS = LAST_REQUIRED_COUNT+2
 seen_tags = dict()
 last_fov = np.array([0.1, 0.1])
@@ -67,7 +67,7 @@ scan_params['LAST_SCAN'] = {
     'FOV': last_fov
 }
 
-cur_params = None
+cur_params = scan_params["FIRST_SCAN"]
 
 # Counts scans completed at any one location
 scan_counter = 0
@@ -91,8 +91,8 @@ def hold_scan():
     scan_call_in_progress = False
 
 
-def grid_table(x0, y0):
-    front_right_corner = np.array([x0, y0], dtype=np.float64) - (dim/2)
+def grid_table(table_center):
+    front_right_corner = table_center - (dim/2)
     next_xy = front_right_corner + (scan_spacing/2)
     points = np.zeros((nx*ny, 2))
     points[0, :] = next_xy
@@ -147,25 +147,25 @@ def handle_scan(request):
     next_quat = Quaternion(0, -1, 0, 0)
     next_pose = Pose(next_point, next_quat)
 
-    for move_count in scan_positions.shape[0]:
+    for move_count in range(scan_positions.shape[0]):
         next_xy = scan_positions[move_count, :]
-        next_pose.pose.position.x, next_pose.pose.position.y = next_xy
+        next_pose.position.x, next_pose.position.y = next_xy
         move_to_position(next_pose)
         hold_scan()
 
     cur_params = scan_params['LAST_SCAN']
 
     scan_positions = np.array([(pose.position.x, pose.position.y)
-                               for pose in in first_tags.values()])
+                               for pose in first_tags.values()])
 
-    for move_count in scan_positions.shape[0]:
+    for move_count in range(scan_positions.shape[0]):
         next_xy = scan_positions[move_count, :]
-        next_pose.pose.position.x, next_pose.pose.position.y = next_xy
+        next_pose.position.x, next_pose.position.y = next_xy
         move_to_position(next_pose)
         hold_scan()
 
-    next_pose.pose.position.x, next_pose.pose.position.y = origin
-    move_to_position(next_pose)
+    #next_pose.pose.position.x, next_pose.pose.position.y = origin
+    #move_to_position(next_pose)
 
     scan_cv.release()
     # Converts seen_tags dictionary to [(1, 2, ...), (Pose1, Pose2, ...)]
@@ -241,7 +241,7 @@ def ar_tag_filter(msg):
 
 def move_to_position(goal_pose):
     plan, _ = left_arm.compute_cartesian_path(
-        [pose],     # waypoints to follow with end
+        [goal_pose],     # waypoints to follow with end
         eef_step,   # eef_step
         0.0         # jump_threshold
     )
