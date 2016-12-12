@@ -9,7 +9,7 @@ import cv_bridge
 first = True
 
 def imgReceived(message):
-    "this test was for tuning parameters for cv, some "
+    "this test was for tuning parameters for cv, some are on trackbars, some are floating about"
     print "______________________________"
     img = cv_bridge.CvBridge().imgmsg_to_cv2(message, desired_encoding="passthrough")
     contourArea = cv2.getTrackbarPos('contourArea','settings')

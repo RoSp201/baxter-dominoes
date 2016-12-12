@@ -11,7 +11,7 @@ from sensor_msgs.msg import Image
 from follow.srv import *
 
 SAMPLE_LENGTH = 100
-COUNTER_LENGTH = 3
+COUNTER_LENGTH = 2
 
 class DominoService:
   def __init__(self):
@@ -22,8 +22,8 @@ class DominoService:
     rospy.init_node('cam_listener')
 
     #Subscribe to the image topic
-    #rospy.Subscriber("/cameras/left_hand_camera/image", Image, self.imgReceived)
-    rospy.Subscriber("/usb_cam/image_raw", Image, self.imgReceived)
+    rospy.Subscriber("/cameras/left_hand_camera/image", Image, self.imgReceived)
+    #rospy.Subscriber("/usb_cam/image_raw", Image, self.imgReceived)
 
     #Create last image publisher
     self.img_pub = rospy.Publisher('baxter_image', Image, queue_size=10)
@@ -38,7 +38,8 @@ class DominoService:
 
   def imgReceived(self, message):
     self.lastImage = message
-    self.analyzeImage([50000, [40, 50], [10, 50, 20, 0 ,35]])
+    #placer magic numbers i know
+    self.analyzeImage([50000, [50, 55], [10, 50, 22, 0 ,35]])
 
   def analyzeImage(self, params):
     # Collect CV params
@@ -48,13 +49,14 @@ class DominoService:
 
     # Convert image to mat, grayscale, blur , and apply canny or threshold filter
     orig = cv_bridge.CvBridge().imgmsg_to_cv2(self.lastImage, desired_encoding="passthrough")
-    cv2.imwrite( "../img.jpg", orig);
-    if self.counter == 0:
-        self.copy = orig.copy()
+    cv2.imwrite( "../img.jpg", orig); #for offline debugging
+
     gray = cv2.cvtColor(orig, cv2.COLOR_BGR2GRAY)
-    blur = cv2.GaussianBlur(gray,(3,3),0)
+    blur = cv2.GaussianBlur(gray,(9,9),0)
     img = cv2.Canny(blur,cParams[0],cParams[1])
     #img = cv2.adaptiveThreshold(blur,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY,11,2)
+
+    # For image display topic
     if self.counter == 0:
         self.copy = cv2.cvtColor(img.copy(), cv2.COLOR_GRAY2BGR)
 
@@ -63,8 +65,8 @@ class DominoService:
     dominoContour = []
     for i in range(len(contours)):
         ((cx,cy),(w,h),angle) = rect = cv2.minAreaRect(contours[i])
-        # THESE MIGHT NEED TO BE TUNED!
-        if w*h < 10000000 and w*h > 10000 and (abs(2*w - h) > 20 or abs(2*h - w) > 20) and (abs(abs(angle) - 90) < 20 or abs(angle) < 20) :
+        # THESE MIGHT NEED TO BE TUNED! MAGIC NUMBERS
+        if w*h < 10000000 and w*h > 10000 and (abs(2*w - h) > 20 or abs(2*h - w) > 30) and (abs(abs(angle) - 90) < 30 or abs(angle) < 20) :
             dominoContour += [contours[i]]
     #dominoContour = [cont for cont in contours if cv2.contourArea(cont)>contourArea and cv2.contourArea(cont)<100000]
 
@@ -132,7 +134,7 @@ class DominoService:
 
     self.counter = (self.counter + 1) % COUNTER_LENGTH
     if self.counter == COUNTER_LENGTH - 1:
-        self.img_pub.publish(cv_bridge.CvBridge().cv2_to_imgmsg(self.copy, encoding="passthrough"))
+        self.img_pub.publish(cv_bridge.CvBridge().cv2_to_imgmsg(self.copy, encoding="bgr8"))
     return response
 
   def analyzeMultipleImages(self, request):
