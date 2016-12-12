@@ -14,7 +14,7 @@ from follow.srv import *
 #dim = np.array([0.5, 1])
 dim = np.array([0.25, .5])
 # x and y FOV
-fov = np.array([0.20, 0.20])
+fov = np.array([0.15, 0.15])
 # Number of lengthwise scans of table
 n_scans = np.ceil(dim/fov).astype(int)
 nx, ny = n_scans
@@ -104,11 +104,6 @@ def handle_scan(request):
         if ix_scan != 0:
             # First move away from Baxter to start of next horizontal scan line
             next_pose.pose.position.x += dx
-            #####In case we actually need to create a new Pose for each move
-            #### cur_pose = next_pose
-            #### next_point = Point(curPose.position.x+dx, curPose.position.y, z0)
-            #### next_quat = Quaternion(0, -1, 0, 0)
-            #### next_pose = Pose(next_point, next_quat)
             move_to_position(next_pose)
         hold_scan()
 
@@ -157,8 +152,8 @@ def ar_tag_filter(msg):
                 del raw_tags[old_tag_id]
         # Add all poses seen
         for (tag_id, pose) in current_tags:
-            #print 'New tag:', tag_id, pose.pose.position.x, pose.pose.position.y
-
+            if not all(np.abs(np.array([pose.pose.position.x, pose.pose.position.y])) <  fov/2):
+                continue
 
             rospy.wait_for_service("translate_server")
             print "try to transform coordinates"
