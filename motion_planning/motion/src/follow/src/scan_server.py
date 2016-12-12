@@ -1,12 +1,18 @@
 #!/usr/bin/env python
 from collections import defaultdict
+import sys
 from threading import Condition
-from moveit_commander import MoveGroupCommander, RobotCommander, roscpp_initialize, PlanningSceneInterface
+try:
+    from moveit_commander import MoveGroupCommander, RobotCommander, roscpp_initialize, PlanningSceneInterface
+    import rospy
+    from geometry_msgs.msg import PoseStamped,Pose, Point, Quaternion
+    from ar_track_alvar_msgs.msg import AlvarMarkers
+    from follow.srv import *
+    ROS_AVAILABLE = True
+except ImportError:
+    ROS_AVAILABLE = False
+
 import numpy as np
-import rospy
-from geometry_msgs.msg import PoseStamped,Pose, Point, Quaternion
-from ar_track_alvar_msgs.msg import AlvarMarkers
-from follow.srv import *
 
 
 # Continuously populated dictionary of seen AR tags
@@ -253,6 +259,27 @@ def scan_server():
     print('\nScan server ready!\n\n')
     rospy.spin()
 
+def test():
+    import matplotlib.pyplot as plt
+    from matplotlib.patches import Rectangle
+    table_center = np.array([0.6, 0.4])
+    table_size = np.array([0.5, 0.8])
+    gridded_points = grid_table(table_center, table_size)
+    table = Rectangle((table_center-table_size/2),
+                      table_size[0], table_size[1],
+                      fill=None)
+    plt.figure()
+    ax = plt.gca()
+    ax.add_patch(table)
+    plt.scatter(gridded_points[:, 0], gridded_points[:, 1])
+    plt.axis('equal')
+    plt.show()
+
 
 if __name__ == '__main__':
-    scan_server()
+    if not ROS_AVAILABLE or (len(sys.argv) > 1 and sys.argv[1] == '-t'):
+        test()
+    elif ROS_AVAILABLE:
+        scan_server()
+    else:
+        print('ROS not available or test flag not set')
