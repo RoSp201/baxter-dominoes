@@ -2,6 +2,7 @@
 
 import sys
 import copy
+import math
 import rospy
 from geometry_msgs.msg import PoseStamped, Pose, Point, Quaternion
 # For the head nod:
@@ -46,7 +47,15 @@ TAGS_TO_PIPS = {
                 }
 
 TABLE_CENTER = [0.6, .4]
-DUMMY_SCANS = [((31, 0, 5), [Pose(), Pose(), Pose()]), ([2],[Pose()])]
+spinnerloc = Pose()
+spinnerloc.position.x = .5
+spinnerloc.position.y = 0
+spinnerloc.position.z = 0
+moveloc = Pose()
+moveloc.position.x = spinnerloc.position.x
+moveloc.position.y = spinnerloc.position.y - VERT_VERT_OFFSET
+moveloc.position.z = spinnerloc.position.z
+DUMMY_SCANS = [((31, 0, 5), [Pose(), Pose(), Pose()]), ([2], [spinnerloc]), ([12], [moveloc])]
 
 
 class Player:
@@ -86,7 +95,7 @@ class Player:
         while not domino:
             domino = self.get_next_domino()
             sleep(5)
-        pos_in_hand = self.add_domino_to_hand((domino))
+        pos_in_hand = self.add_domino_to_hand(domino)
         hand_coords = copy.deepcopy(self.hand_base)
         # This assumes that Baxter's hand starts in the closest-left corner of the table and it grows to the right.
         hand_coords.position.y -= (pos_in_hand + 1) * HAND_SPACE_OFFSET
@@ -107,9 +116,11 @@ class Player:
                 rospy.sleep(5)
                 newdoms = self.scan_for_dominoes()
                 for newdom in newdoms:
-                    spots = self.spinner.get_open_spots()
-                    norm = lambda p1, p2: sqrt((p1.pose.position.x - p2.pose.position.x)**2 + (p1.pose.position.y - p2.pose.position.y)**2)
+                    spots = self.spinner.get_open_spots([])
+                    norm = lambda p1, p2: math.sqrt((p1.pose.position.x - p2.pose.position.x)**2 + (p1.pose.position.y - p2.pose.position.y)**2)
 
+                    print(newdom)
+                    print(spots)
                     spot = min(spots, key= lambda dom: norm(newdom.pose_st, dom[0].pose_st))
                     spot[0].sides[spot[1]] = newdom
 
@@ -150,7 +161,6 @@ class Player:
             return
         domino_to_move = self.hand[move[0]]
         domino_to_move_to = open_spots[move[1]]
-        print("MOVE {}".format(move))
         # Calculate which direction to rotate the domino.
         LR = domino_to_move_to[0].get_domino_direction()
         rot = ""
@@ -180,13 +190,14 @@ class Player:
 #            print "Service call failed: %s" % e
 
         self.move_domino(domino_to_move, move_to, rot)
-        domino_to_move.sides[move[2]] = domino_to_move_to
+        domino_to_move.sides[move[2]] = domino_to_move_to[0]
         domino_to_move_to[0].sides[move[3]] = domino_to_move
         self.turns_taken += 1
         print "Take turn successful"
         print "2nod"
 
     def move_domino(self, domino_to_move, move_to, rot=""):
+        print ("Moving domino {} to {}. Rotation:".format(domino_to_move.tag, move_to, rot))
         return
         #move_to must be a posed stamp object
         #move_to = unmade_translate_coords(move_to)
@@ -222,7 +233,6 @@ class Player:
             newdoms = []
             for domino in dominoes:
                 if domino not in list(self.seen):
-                    print(domino.tag)
                     newdoms.append(domino)
                     self.seen[domino.tag] = domino
             # Make sure that we're not too off the mark on how many new dominoes we should have.
@@ -291,6 +301,8 @@ class Domino:
         self.pose_st = pose_st
 
     def __eq__(self, other):
+        if not other:
+            return False
         if type(other) == int:
             return self.tag == other
         else:
@@ -307,17 +319,17 @@ class Domino:
         This just translates to finding the ends of a linked list."""
         top = self.sides["top"]
         bottom = self.sides["bottom"]
+        seen.append(self)
         spots = []
         if top and top not in seen:
-            spots.append(top.get_open_spots(seen))
-        else:
+            spots.extend(top.get_open_spots(seen))
+        elif top not in seen:
             spots.append((self, "top"))
         if bottom and bottom not in seen:
-            spots.append(bottom.get_open_spots(seen))
-        else:
+            spots.extend(bottom.get_open_spots(seen))
+        elif bottom not in seen:
             spots.append((self, "bottom"))
-        print(spots)
-        print "SPOTS: {} {}".format(spots[0][0].pips, spots[1][0].pips)
+        print "get_open_spots: SPOTS: {}".format(spots)
         return spots
 
     def find_domino(self, pips):
@@ -351,15 +363,16 @@ class Domino:
         """Returns the offset from this domino's origin to apply to a domino if placing it at side side, specified in this domino's reference frame."""
         temp = PoseStamped()
         if self.get_domino_direction() == "L":
-            if "side" == "top":
+            if side == "top":
                 temp.pose.position.y += VERT_VERT_OFFSET
-            if "side" == "bottom":
+            if side == "bottom":
                 temp.pose.position.y -= VERT_VERT_OFFSET
         if self.get_domino_direction() == "R":
-            if "side" == "top":
+            if side == "top":
                 temp.pose.position.y -= VERT_VERT_OFFSET
-            if "side" == "bottom":
+            if side == "bottom":
                 temp.pose.position.y += VERT_VERT_OFFSET
+        return temp
         #if "side" == "left":
         #    temp.pose.position.y += HORIZ_VERT_OFFSET
         #if "side" == "right":
