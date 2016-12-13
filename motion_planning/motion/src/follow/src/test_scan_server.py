@@ -12,7 +12,7 @@ def test_scan_server():
 	perform_scan = rospy.ServiceProxy('scan_server', Scan, persistent=True)
 	# test_request = Scan(table_center)
 	print 'Performing scan...'
-	response = perform_scan(table_center)
+	response = perform_scan(table_center, table_size)
 	tag_numbers, tag_poses = response.tagNumbers, response.arTagPoses
 	print 'Done with scan.'
 	print tag_numbers

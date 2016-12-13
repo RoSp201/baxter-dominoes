@@ -144,8 +144,8 @@ def handle_scan(request):
         val['TAGS'].clear()
 
     cur_params = scan_params['FIRST_SCAN']
-    table_center = np.array(request.tableCenter, request.tableSize)
-    scan_xy = grid_table(table_center)
+    table_center, table_size = np.array(request.tableCenter), np.array(request.tableSize)
+    scan_xy = grid_table(table_center, table_size)
     scan_points(scan_xy)
     print('FIRST SCAN FOUND {}', str(first_tags.keys()))
 
@@ -175,8 +175,7 @@ def ar_tag_filter(msg):
     """
     # Only scan when scanner is calling hold_scan()
     global scan_counter
-    if ((cur_params['MAX_SCANS'] <= scan_counter) or (not scan_call_in_progress)
-        or (not scan_cv.acquire(blocking=False))):
+    if (not scan_call_in_progress) or (not scan_cv.acquire(blocking=False)):
         return
 
     # Extract useful information
@@ -229,7 +228,7 @@ def ar_tag_filter(msg):
 
 def move_to_position(goal_pose):
     plan, _ = left_arm.compute_cartesian_path(
-        [goal_pose],     # waypoints to follow with end
+        [left_arm.set_current_state_to_start_state(), goal_pose],     # waypoints to follow with end
         eef_step,   # eef_step
         0.0         # jump_threshold
     )
