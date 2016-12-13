@@ -229,8 +229,9 @@ def ar_tag_filter(msg):
 
 
 def move_to_position(goal_pose):
+    left_arm.set_start_state_to_current_state()
     plan, _ = left_arm.compute_cartesian_path(
-        [left_arm.set_current_state_to_start_state(), goal_pose],     # waypoints to follow with end
+        [goal_pose],     # waypoints to follow with end
         eef_step,   # eef_step
         0.0         # jump_threshold
     )
