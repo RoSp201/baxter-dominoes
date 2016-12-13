@@ -81,7 +81,7 @@ class Player:
     def pick_from_boneyard(self):
         """Wait for a player to give us a domino"""
         # Make baxter signal that he can't make a move by nodding. #NOTE: Make sure head_action server running
-        baxter_interface.Head().command_nod()
+        #baxter_interface.Head().command_nod()
         print "\nBaxter nodded in request for a new domino."
         rospy.sleep(5.0)
         domino = None
@@ -187,8 +187,8 @@ class Player:
         domino_to_move_to[0].sides[move[3]] = domino_to_move
         self.turns_taken += 1
         print "Take turn successful"
-        baxter_interface.Head().command_nod()
-        baxter_interface.Head().command_nod()
+        #baxter_interface.Head().command_nod()
+        #baxter_interface.Head().command_nod()
 
     def move_domino(self, domino_to_move, move_to, rot=""):
         #move_to must be a posed stamp object
