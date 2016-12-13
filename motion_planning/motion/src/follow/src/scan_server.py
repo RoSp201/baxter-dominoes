@@ -147,13 +147,13 @@ def handle_scan(request):
     table_center, table_size = np.array(request.tableCenter), np.array(request.tableSize)
     scan_xy = grid_table(table_center, table_size)
     scan_points(scan_xy)
-    print('FIRST SCAN FOUND {}', str(first_tags.keys()))
+    print('FIRST SCAN FOUND {}'.format(first_tags.keys()))
 
     cur_params = scan_params['LAST_SCAN']
     scan_xy = np.array([(pose.position.x, pose.position.y)
                         for pose in first_tags.values()])
     scan_points(scan_xy)
-    print('LAST SCAN FOUND {}', str(last_tags.keys()))
+    print('LAST SCAN FOUND {}'.format(last_tags.keys()))
 
     scan_cv.release()
     # Converts last_tags dictionary to [(1, 2, ...), (Pose1, Pose2, ...)]
@@ -190,7 +190,9 @@ def ar_tag_filter(msg):
                 del raw_tags[old_tag_id]
         # Add all poses seen
         for (tag_id, pose) in current_tags:
+            print('Found tag {}'.format(tag_id))
             if not all(np.abs(np.array([pose.pose.position.x, pose.pose.position.y])) <  cur_params['FOV']/2):
+                print('Tag {} is outside FOV'.format(tag_id))
                 continue
 
             rospy.wait_for_service('translate_server')
@@ -206,7 +208,7 @@ def ar_tag_filter(msg):
             tag_list.append((pose.pose.position, pose.pose.orientation))
             # If pose seen enough times, average pose information and add to tag dict
             if len(tag_list) == cur_params['REQUIRED_COUNT']:
-                print('Moving tag {} to filtered list.')
+                print('Moving tag {} to filtered list.'.format(tag_id))
                 positions, orientations = zip(*tag_list)
                 avg_pos = np.mean(
                     np.array([(pos.x, pos.y, pos.z) for pos in positions]),
