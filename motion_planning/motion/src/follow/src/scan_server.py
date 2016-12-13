@@ -23,9 +23,9 @@ raw_tags = defaultdict(list) # tag number: [(confidence, Position, Orientation),
 scan_params = dict()
 
 FIRST_REQUIRED_COUNT = 2
-FIRST_Z = 0.1
+FIRST_Z = 0.05
 first_tags = dict() # tag number: Pose
-FIRST_FOV = np.array([0.1, 0.1])
+FIRST_FOV = np.array([0.05, 0.05])
 # Once a tag in raw_tags has a count of FIRST_REQUIRED_COUNT, it's added to first_tags
 scan_params['FIRST_SCAN'] = {
     'REQUIRED_COUNT': FIRST_REQUIRED_COUNT,
@@ -36,7 +36,7 @@ scan_params['FIRST_SCAN'] = {
 
 # After first scan, go back to tags and rescan with higher accuracy
 LAST_REQUIRED_COUNT = 5
-LAST_Z = 0.1
+LAST_Z = 0.05
 last_tags = dict()
 LAST_FOV = np.array([0.1, 0.1])
 scan_params['LAST_SCAN'] = {
@@ -175,7 +175,7 @@ def ar_tag_filter(msg):
     """
     # Only scan when scanner is calling hold_scan()
     global scan_counter
-    if (not scan_call_in_progress) or (not scan_cv.acquire(blocking=False)):
+    if (not scan_call_in_progress) or (scan_counter>=10) or (not scan_cv.acquire(blocking=False)):
         return
 
     # Extract useful information
@@ -236,7 +236,7 @@ def move_to_position(goal_pose):
         0.0         # jump_threshold
     )
     left_arm.execute(plan)
-    rospy.sleep(1.0) #add this to see if baxter's action trajectory server will stop complaining about reaching max velocity threshold during scan.
+    rospy.sleep(2.0) #add this to see if baxter's action trajectory server will stop complaining about reaching max velocity threshold during scan.
 
 
 def init_motion():

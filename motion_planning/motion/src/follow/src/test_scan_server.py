@@ -4,7 +4,7 @@ import rospy
 from follow.srv import Scan
 
 table_center = [0.6, 0.4]
-table_size = [0.5, 0.8]
+table_size = [0.5, 0.6]
 
 def test_scan_server():
 	rospy.init_node('test_scan_server', anonymous=True)
