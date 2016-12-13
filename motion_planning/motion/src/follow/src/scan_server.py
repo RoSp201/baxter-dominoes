@@ -19,6 +19,7 @@ import numpy as np
 # raw_tags contains each tag seen in the last tag reading
 # If a tag is kept from one read to the next, adds list of AlvarMarker for that tag
 raw_tags = defaultdict(list) # tag number: [(confidence, Position, Orientation), ...]
+seen_tags = dict()
 
 scan_params = dict()
 
@@ -163,6 +164,7 @@ def handle_scan(request):
 
     for val in scan_params.values():
         val['TAGS'].clear()
+    seen_tags.clear()
 
     cur_params = scan_params['FIRST_SCAN']
     table_center, table_size = np.array(request.tableCenter), np.array(request.tableSize)
@@ -182,6 +184,7 @@ def handle_scan(request):
         cur_params = scan_params['THIRD_SCAN']
         pose = second_tags[tag_id]
         pos = np.array([(pose.position.x, pose.position.y)])
+        second_tags.clear()
         scan_points(pos)
         print('THIRD SCAN FOUND {}'.format(third_tags.keys()))
         if tag_id not in third_tags:
@@ -191,11 +194,14 @@ def handle_scan(request):
         cur_params = scan_params['LAST_SCAN']
         pose = third_tags[tag_id]
         pos = np.array([(pose.position.x, pose.position.y)])
+        third_tags.clear()
         scan_points(pos)
         print('LAST SCAN FOUND {}'.format(last_tags.keys()))
         if tag_id not in last_tags:
             print('{} is invalid in last scan.'.format(tag_id))
             continue
+        seen_tags[tag_id] = last_tags[tag_id]
+        last_tags.clear()
 
     scan_cv.release()
     # Converts last_tags dictionary to [(1, 2, ...), (Pose1, Pose2, ...)]
@@ -232,7 +238,7 @@ def ar_tag_filter(msg):
                 del raw_tags[old_tag_id]
         # Add all poses seen
         for (tag_id, pose) in current_tags:
-            print('Found tag {}'.format(tag_id))
+            print('Found tag {} at {}, {}'.format(tag_id, pose.pose.position.x, pose.pose.position.y))
             if not all(np.abs(np.array([pose.pose.position.x, pose.pose.position.y])) <  cur_params['FOV']/2):
                 print('Tag {} is outside FOV'.format(tag_id))
                 continue
