@@ -98,6 +98,8 @@ class Player:
         i = 0
         while i < len(self.hand) and self.hand[i]:
             i += 1
+        if i == len(self.hand):
+            i += 1
         self.hand.insert(i, domino)
         return i
 
@@ -109,7 +111,7 @@ class Player:
                 rospy.sleep(5)
                 newdoms = self.scan_for_dominoes()
                 for newdom in newdoms:
-                    spots = self.spinner.get_open_spots()
+                    spots = self.spinner.get_open_spots([])
                     norm = lambda p1, p2: math.sqrt((p1.pose.position.x - p2.pose.position.x)**2 + (p1.pose.position.y - p2.pose.position.y)**2)
 
                     spot = min(spots, key= lambda dom: norm(newdom.pose_st, dom[0].pose_st))
