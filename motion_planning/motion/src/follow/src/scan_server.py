@@ -23,9 +23,9 @@ raw_tags = defaultdict(list) # tag number: [(confidence, Position, Orientation),
 scan_params = dict()
 
 FIRST_REQUIRED_COUNT = 2
-FIRST_Z = 0.05
+FIRST_Z = 0.2
 first_tags = dict() # tag number: Pose
-FIRST_FOV = np.array([0.05, 0.05])
+FIRST_FOV = np.array([0.2, 0.2])
 # Once a tag in raw_tags has a count of FIRST_REQUIRED_COUNT, it's added to first_tags
 scan_params['FIRST_SCAN'] = {
     'REQUIRED_COUNT': FIRST_REQUIRED_COUNT,
@@ -34,9 +34,30 @@ scan_params['FIRST_SCAN'] = {
     'Z': FIRST_Z
 }
 
-# After first scan, go back to tags and rescan with higher accuracy
-LAST_REQUIRED_COUNT = 5
-LAST_Z = 0.05
+SECOND_REQUIRED_COUNT = 2
+SECOND_Z = 0.3
+second_tags = dict()
+SECOND_FOV = np.array([0.3, 0.3])
+scan_params['SECOND_SCAN'] = {
+    'REQUIRED_COUNT': SECOND_REQUIRED_COUNT,
+    'TAGS': last_tags,
+    'FOV': SECOND_FOV,
+    'Z': SECOND_Z
+}
+
+THIRD_REQUIRED_COUNT = 2
+THIRD_Z = 0.15
+third_tags = dict()
+THIRD_FOV = np.array([0.2, 0.2])
+scan_params['THIRD_SCAN'] = {
+    'REQUIRED_COUNT': THIRD_REQUIRED_COUNT,
+    'TAGS': last_tags,
+    'FOV': THIRD_FOV,
+    'Z': THIRD_Z
+}
+
+LAST_REQUIRED_COUNT = 4
+LAST_Z = 0.1
 last_tags = dict()
 LAST_FOV = np.array([0.1, 0.1])
 scan_params['LAST_SCAN'] = {
@@ -149,11 +170,32 @@ def handle_scan(request):
     scan_points(scan_xy)
     print('FIRST SCAN FOUND {}'.format(first_tags.keys()))
 
-    cur_params = scan_params['LAST_SCAN']
-    scan_xy = np.array([(pose.position.x, pose.position.y)
-                        for pose in first_tags.values()])
-    scan_points(scan_xy)
-    print('LAST SCAN FOUND {}'.format(last_tags.keys()))
+    for tag_id, pose in first_tags.items():
+        cur_params = scan_params['SECOND_SCAN']
+        pos = np.array([(pose.position.x, pose.position.y)])
+        scan_points(pos)
+        print('SECOND SCAN FOUND {}'.format(second_tags.keys()))
+        if tag_id not in second_tags:
+            print('{} is invalid in scan 2.'.format(tag_id))
+            continue
+
+        cur_params = scan_params['THIRD_SCAN']
+        pose = second_tags[tag_id]
+        pos = np.array([(pose.position.x, pose.position.y)])
+        scan_points(pos)
+        print('THIRD SCAN FOUND {}'.format(third_tags.keys()))
+        if tag_id not in third_tags:
+            print('{} is invalid in scan 3.'.format(tag_id))
+            continue
+
+        cur_params = scan_params['LAST_SCAN']
+        pose = third_tags[tag_id]
+        pos = np.array([(pose.position.x, pose.position.y)])
+        scan_points(pos)
+        print('LAST SCAN FOUND {}'.format(last_tags.keys()))
+        if tag_id not in last_tags:
+            print('{} is invalid in last scan.'.format(tag_id))
+            continue
 
     scan_cv.release()
     # Converts last_tags dictionary to [(1, 2, ...), (Pose1, Pose2, ...)]
