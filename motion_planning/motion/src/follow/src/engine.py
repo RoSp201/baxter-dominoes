@@ -98,6 +98,8 @@ class Player:
         i = 0
         while i < len(self.hand) and self.hand[i]:
             i += 1
+        if i == len(self.hand):
+            i += 1
         self.hand.insert(i, domino)
         return i
 
@@ -108,8 +110,8 @@ class Player:
             while self.turns_taken % NUM_PLAYERS == 0:
                 rospy.sleep(5)
                 newdoms = self.scan_for_dominoes()
+                spots = self.spinner.get_open_spots([])
                 for newdom in newdoms:
-                    spots = self.spinner.get_open_spots()
                     norm = lambda p1, p2: math.sqrt((p1.pose.position.x - p2.pose.position.x)**2 + (p1.pose.position.y - p2.pose.position.y)**2)
 
                     spot = min(spots, key= lambda dom: norm(newdom.pose_st, dom[0].pose_st))
@@ -255,13 +257,16 @@ class Player:
     def blatnerize(self):
         rospy.wait_for_service("scan_server")
         print "\nTry to do a scan"
-        try:
-            scan = rospy.ServiceProxy("scan_server", Scan, persistent=True)
-            response = scan(TABLE_CENTER)
-            tag_numbers, tag_poses = response.tagNumbers, response.arTagPoses
-            print "Scan returned {} and {}".format(tag_numbers, tag_poses)
-        except rospy.ServiceException, e:
-            print "Service call failed: %s" % e
+        tag_numbers, tag_poses = None, None
+        while 1:
+            try:
+                scan = rospy.ServiceProxy("scan_server", Scan, persistent=True)
+                response = scan(TABLE_CENTER)
+                tag_numbers, tag_poses = response.tagNumbers, response.arTagPoses
+                print "Scan returned {} and {}".format(tag_numbers, tag_poses)
+                break
+            except rospy.ServiceException, e:
+                print "Service call failed: %s" % e
         print "Scan successful."
         return tag_numbers, tag_poses
 

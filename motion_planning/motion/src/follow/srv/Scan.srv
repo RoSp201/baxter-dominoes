@@ -8,7 +8,6 @@
 #   |______:______|
 #
 float64[] tableCenter
-float64[] tableSize
 ---
 uint32[] tagNumbers
 geometry_msgs/Pose[] arTagPoses
