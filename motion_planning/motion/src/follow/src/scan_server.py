@@ -22,10 +22,10 @@ raw_tags = defaultdict(list) # tag number: [(confidence, Position, Orientation),
 
 scan_params = dict()
 
-FIRST_REQUIRED_COUNT = 2
-FIRST_Z = 0.2
+FIRST_REQUIRED_COUNT = 4
+FIRST_Z = 0.03
 first_tags = dict() # tag number: Pose
-FIRST_FOV = np.array([0.2, 0.2])
+FIRST_FOV = np.array([0.1, 0.1])
 # Once a tag in raw_tags has a count of FIRST_REQUIRED_COUNT, it's added to first_tags
 scan_params['FIRST_SCAN'] = {
     'REQUIRED_COUNT': FIRST_REQUIRED_COUNT,
@@ -35,31 +35,31 @@ scan_params['FIRST_SCAN'] = {
 }
 
 SECOND_REQUIRED_COUNT = 2
-SECOND_Z = 0.3
+SECOND_Z = 0.05
 second_tags = dict()
 SECOND_FOV = np.array([0.3, 0.3])
 scan_params['SECOND_SCAN'] = {
     'REQUIRED_COUNT': SECOND_REQUIRED_COUNT,
-    'TAGS': last_tags,
+    'TAGS': second_tags,
     'FOV': SECOND_FOV,
     'Z': SECOND_Z
 }
 
 THIRD_REQUIRED_COUNT = 2
-THIRD_Z = 0.15
+THIRD_Z = 0.04
 third_tags = dict()
-THIRD_FOV = np.array([0.2, 0.2])
+THIRD_FOV = np.array([0.1, 0.1])
 scan_params['THIRD_SCAN'] = {
     'REQUIRED_COUNT': THIRD_REQUIRED_COUNT,
-    'TAGS': last_tags,
+    'TAGS': third_tags,
     'FOV': THIRD_FOV,
     'Z': THIRD_Z
 }
 
 LAST_REQUIRED_COUNT = 4
-LAST_Z = 0.1
+LAST_Z = 0.02
 last_tags = dict()
-LAST_FOV = np.array([0.1, 0.1])
+LAST_FOV = np.array([0.05, 0.05])
 scan_params['LAST_SCAN'] = {
     'REQUIRED_COUNT': LAST_REQUIRED_COUNT,
     'TAGS': last_tags,
