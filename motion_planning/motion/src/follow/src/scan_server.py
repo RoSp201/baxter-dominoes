@@ -32,8 +32,8 @@ translate_server = None
 # If a tag is kept from one read to the next, adds list of AlvarMarker for that tag
 raw_tags = defaultdict(list) # tag number: [(confidence, Position, Orientation), ...]
 # Once a tag in raw_tags has a count of REQUIRED_COUNT, it's added to seen_tags
-REQUIRED_COUNT = 5
-MAX_SCANS = REQUIRED_COUNT*2
+REQUIRED_COUNT = 3
+MAX_SCANS = REQUIRED_COUNT+2
 seen_tags = dict() # tag number: Pose
 # Counts scans completed at any one location
 scan_counter = 0
@@ -155,12 +155,14 @@ def ar_tag_filter(msg):
     current_tags = [(marker.id, marker.pose) for marker in msg.markers if marker.id not in seen_tags and marker.id < 32]
     if current_tags:
         current_tag_ids = set(zip(*current_tags)[0])
+        print(current_tag_ids)
         # Remove tags from raw dict that aren't seen this round
         for old_tag_id in raw_tags.keys():
             if old_tag_id not in current_tag_ids:
                 del raw_tags[old_tag_id]
         # Add all poses seen
         for (tag_id, pose) in current_tags:
+            print('Seen {}'.format(tag_id))
             if not all(np.abs(np.array([pose.pose.position.x, pose.pose.position.y])) <  fov/2):
                 continue
             while True:
@@ -178,6 +180,7 @@ def ar_tag_filter(msg):
             tag_list.append((pose.pose.position, pose.pose.orientation))
             # If pose seen enough times, average pose information and add to seen_tags
             if len(tag_list) == REQUIRED_COUNT:
+                print('Accepted tag {}'.format(tag_id))
                 positions, orientations = zip(*tag_list)
                 avg_pos = np.mean(
                     np.array([(pos.x, pos.y, pos.z) for pos in positions]),
