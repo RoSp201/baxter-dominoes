@@ -47,6 +47,7 @@ TAGS_TO_PIPS = {
                 }
 
 TABLE_CENTER = [0.6, .4]
+SCAN_SIZE = [.2, .2]
 
 
 class Player:
@@ -217,7 +218,7 @@ class Player:
             domino_to_move.pos = move_to
         print "Domino was placed successfully."
 
-    def scan_for_dominoes(self, num_dominoes = 0, center):
+    def scan_for_dominoes(self, center, num_dominoes=0):
         """Finds all new dominoes currently detectable and enforces that we see no more than num_dominoes new ones.
         A value of zero indicates that any number of new dominoes is allowed."""
         while 1:
@@ -235,7 +236,7 @@ class Player:
             return newdoms
 
     def get_next_domino(self):
-        dom = self.scan_for_dominoes(1)
+        dom = self.scan_for_dominoes(TABLE_CENTER, 1)
         if dom:
             return dom[0]
         else:
