@@ -9,20 +9,8 @@ from ar_track_alvar_msgs.msg import AlvarMarkers
 from follow.srv import *
 
 
-# Table dimensions in meters
-# TODO: use the first dim when not debugging
-dim = np.array([0.3, 0.6])
-#dim = np.array([0.25, .5])
 # x and y FOV
 fov = np.array([0.15, 0.15])
-# Number of lengthwise scans of table
-n_scans = np.ceil(dim/fov).astype(int)
-nx, ny = n_scans
-# Space between lengthwise scans
-scan_spacing = dim/n_scans
-dx, dy = scan_spacing
-print n_scans
-print scan_spacing
 
 # Constant scan height above the table
 z0 = 0.05
@@ -85,6 +73,16 @@ def handle_scan(request):
     print('Scanning from service...')
     scan_cv.acquire()
     origin = np.array(request.tableCenter)
+    dim = np.array(request.tableSize)
+    # Number of lengthwise scans of table
+    n_scans = np.ceil(dim/fov).astype(int)
+    nx, ny = n_scans
+    # Space between lengthwise scans
+    scan_spacing = dim/n_scans
+    dx, dy = scan_spacing
+    print(n_scans)
+    print(scan_spacing)
+
     x0, y0 = origin - (dim/2)
 
     # Move Baxter's camera to the front right corner of the table
