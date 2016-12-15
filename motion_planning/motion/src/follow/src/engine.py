@@ -214,12 +214,12 @@ class Player:
             domino_to_move.pos = move_to
         print "Domino was placed successfully."
 
-    def scan_for_dominoes(self, num_dominoes = 0):
+    def scan_for_dominoes(self, num_dominoes = 0, center):
         """Finds all new dominoes currently detectable and enforces that we see no more than num_dominoes new ones.
         A value of zero indicates that any number of new dominoes is allowed."""
         while 1:
             ## Find new dominoes:
-            dominoes = self.call_scan()
+            dominoes = self.call_scan(center)
             newdoms = []
             for domino in dominoes:
                 if domino not in list(self.seen):
@@ -238,8 +238,8 @@ class Player:
         else:
             return self.get_next_domino()
 
-    def call_scan(self):
-        tags, poses= self.blatnerize()
+    def call_scan(self, center):
+        tags, poses= self.blatnerize(center)
         print "tags: {}".format(tags)
         print "poses: {}".format(poses)
         dominoes = []
@@ -254,14 +254,14 @@ class Player:
             dominoes.append(Domino(TAGS_TO_PIPS[tags[i]], tags[i], stamped))
         return dominoes
 
-    def blatnerize(self):
+    def blatnerize(self, center):
         rospy.wait_for_service("scan_server")
         print "\nTry to do a scan"
         tag_numbers, tag_poses = None, None
         while 1:
             try:
                 scan = rospy.ServiceProxy("scan_server", Scan, persistent=True)
-                response = scan(TABLE_CENTER)
+                response = scan(center, SCAN_SIZE)
                 tag_numbers, tag_poses = response.tagNumbers, response.arTagPoses
                 print "Scan returned {} and {}".format(tag_numbers, tag_poses)
                 break

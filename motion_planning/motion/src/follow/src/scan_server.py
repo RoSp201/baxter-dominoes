@@ -248,6 +248,7 @@ if __name__ == '__main__':
     if not ROS_AVAILABLE or (len(sys.argv) == 2 and sys.argv[1] == '-t'):
         test_server()
     elif ROS_AVAILABLE:
+        print("Starting scan server")
         scan_server()
     else:
         print('ROS not available. Test with -t.')
