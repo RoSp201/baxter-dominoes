@@ -47,8 +47,8 @@ def hold_scan():
         scan_cv.wait()
         # Wait returns with lock acquired
     # Exits with cv acquired
-    print seen_tags.keys()
-    print 'Finished one location'
+    print(seen_tags.keys())
+    print('Finished one location')
     scan_call_in_progress = False
 
 
@@ -153,15 +153,15 @@ def ar_tag_filter(msg):
             if not all(np.abs(np.array([pose.pose.position.x, pose.pose.position.y])) <  fov/2):
                 continue
 
-            rospy.wait_for_service("translate_server")
-            print "try to transform coordinates"
+            rospy.wait_for_service('translate_server')
+            print('try to transform coordinates')
             try:
-                translate_server = rospy.ServiceProxy("translate_server", Translate)
+                translate_server = rospy.ServiceProxy('translate_server', Translate)
                 pose = translate_server(pose, 'base').output_pose_stamped
             except rospy.ServiceException, e:
-                print "Service call failed: %s" % e
-            print "coordinates successfully transformed."
-            print "Pose position: \n{}".format(pose.pose.position)
+                print('Service call failed: {}'.format(e))
+            print('coordinates successfully transformed.')
+            print('Pose position: \n{}'.format(pose.pose.position))
             tag_list = raw_tags[tag_id]
             tag_list.append((pose.pose.position, pose.pose.orientation))
             # If pose seen enough times, average pose information and add to seen_tags
@@ -180,7 +180,7 @@ def ar_tag_filter(msg):
                 seen_tags[tag_id] = Pose(filt_point, filt_quat)
                 del raw_tags[tag_id]
     scan_counter += 1
-    print 'Scan counter:',scan_counter
+    print('Scan counter: {}'.format(scan_counter))
     scan_cv.notify()
     scan_cv.release()
 
