@@ -1,12 +1,17 @@
 #!/usr/bin/env python
 from collections import defaultdict
 from threading import Condition
-from moveit_commander import MoveGroupCommander, RobotCommander, roscpp_initialize, PlanningSceneInterface
 import numpy as np
-import rospy
-from geometry_msgs.msg import PoseStamped,Pose, Point, Quaternion
-from ar_track_alvar_msgs.msg import AlvarMarkers
-from follow.srv import *
+import sys
+try:
+    from moveit_commander import MoveGroupCommander, RobotCommander, roscpp_initialize, PlanningSceneInterface
+    import rospy
+    from geometry_msgs.msg import PoseStamped,Pose, Point, Quaternion
+    from ar_track_alvar_msgs.msg import AlvarMarkers
+    from follow.srv import *
+    ROS_AVAILABLE = True
+except ImportError:
+    ROS_AVAILABLE = False
 
 
 # x and y FOV
@@ -85,6 +90,12 @@ def handle_scan(request):
 
     x0, y0 = origin - (dim/2)
 
+    if not ROS_AVAILABLE:
+        print('Center: {:.2f}, {:.2f}'.format(*origin))
+        print('Table size: {:.2f}, {:.2f}'.format(*dim))
+        print('Front right corner: {:.2f}, {:.2f}'.format(x0, y0))
+        return
+
     # Move Baxter's camera to the front right corner of the table
     next_point = Point(x0, y0, z0)
     next_quat = Quaternion(0, -1, 0, 0)
@@ -159,7 +170,7 @@ def ar_tag_filter(msg):
                     translate_server = rospy.ServiceProxy('translate_server', Translate)
                     pose = translate_server(pose, 'base').output_pose_stamped
                     break
-                except rospy.ServiceException, e:
+                except rospy.ServiceException as e:
                     print('Service call failed: {}'.format(e))
             print('coordinates successfully transformed.')
             print('Pose position: \n{}'.format(pose.pose.position))
@@ -222,5 +233,21 @@ def scan_server():
     rospy.spin()
 
 
+def test_server():
+    class ScanRequest(object):
+        def __init__(self, tableCenter, tableSize):
+            assert len(tableCenter) == 2
+            assert len(tableSize) == 2
+            self.tableCenter = np.array(tableCenter)
+            self.tableSize = np.array(tableSize)
+
+    handle_scan(ScanRequest([0.4, 0.5], [0.4, 0.6]))
+
+
 if __name__ == '__main__':
-    scan_server()
+    if not ROS_AVAILABLE or (len(sys.argv) == 2 and sys.argv[1] == '-t'):
+        test_server()
+    elif ROS_AVAILABLE:
+        scan_server()
+    else:
+        print('ROS not available. Test with -t.')
