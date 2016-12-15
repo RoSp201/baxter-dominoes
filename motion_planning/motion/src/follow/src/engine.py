@@ -59,7 +59,7 @@ class Player:
         print "\n\n*** START OF GAME ***\n\n"
         print "Scanning for the hand"
         # Find hand AR tag and populate both seen and hand with the dominoes in our hand.
-        self.scan_for_dominoes()
+        self.scan_for_dominoes(TABLE_CENTER)
         self.hand_coords = self.seen[HAND_AR_NUM].pose_st
         temp = self.seen[HAND_AR_NUM]
         # Take away the root hand tag when we're constructing the list
@@ -109,8 +109,11 @@ class Player:
             #while it's baxter's turn
             while self.turns_taken % NUM_PLAYERS == 0:
                 rospy.sleep(5)
-                newdoms = self.scan_for_dominoes()
+                newdoms = []
                 spots = self.spinner.get_open_spots([])
+                for spot in spots:
+                    pos = (spot[0].pose.x, spot[0].pose.y)
+                    newdoms.append(self.scan_for_dominoes(pos))
                 for newdom in newdoms:
                     norm = lambda p1, p2: math.sqrt((p1.pose.position.x - p2.pose.position.x)**2 + (p1.pose.position.y - p2.pose.position.y)**2)
 
