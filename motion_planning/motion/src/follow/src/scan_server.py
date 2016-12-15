@@ -152,14 +152,15 @@ def ar_tag_filter(msg):
         for (tag_id, pose) in current_tags:
             if not all(np.abs(np.array([pose.pose.position.x, pose.pose.position.y])) <  fov/2):
                 continue
-
-            rospy.wait_for_service('translate_server')
-            print('try to transform coordinates')
-            try:
-                translate_server = rospy.ServiceProxy('translate_server', Translate)
-                pose = translate_server(pose, 'base').output_pose_stamped
-            except rospy.ServiceException, e:
-                print('Service call failed: {}'.format(e))
+            while True:
+                try:
+                    print('try to transform coordinates')
+                    rospy.wait_for_service('translate_server')
+                    translate_server = rospy.ServiceProxy('translate_server', Translate)
+                    pose = translate_server(pose, 'base').output_pose_stamped
+                    break
+                except rospy.ServiceException, e:
+                    print('Service call failed: {}'.format(e))
             print('coordinates successfully transformed.')
             print('Pose position: \n{}'.format(pose.pose.position))
             tag_list = raw_tags[tag_id]
