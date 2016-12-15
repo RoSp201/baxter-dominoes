@@ -8,6 +8,7 @@
     <param name="pixel_format" value="mjpeg" />
     <param name="camera_frame_id" value="usb_cam" />
     <param name="io_method" value="mmap" />
+    <param name="camera_info_url" value="file:///home/cc/ee106a/fa16/class/ee106a-abo/ros_workspaces/lab6/src/lab6/yml/lifecam.yml" />
 
   </node>
 </launch>
