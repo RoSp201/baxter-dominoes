@@ -127,9 +127,6 @@ def handle_scan(request):
 
         direction *= -1
 
-    next_pose.pose.position.x, next_pose.pose.position.y = origin
-    move_to_position(next_pose)
-
     scan_cv.release()
     # Converts seen_tags dictionary to [(1, 2, ...), (Pose1, Pose2, ...)]
     return zip(*seen_tags.items())
