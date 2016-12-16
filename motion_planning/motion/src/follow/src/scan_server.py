@@ -24,9 +24,6 @@ z0 = 0.15
 # MoveGroupCommander arm object
 left_arm = None
 
-# translate_service proxy
-translate_server = None
-
 
 # Continuously populated dictionary of seen AR tags
 # raw_tags contains each tag seen in the last tag reading
