@@ -225,7 +225,7 @@ def init_motion():
 
 def scan_server():
     rospy.init_node('scan_server')
-    rospy.Subscriber('ar_pose_marker', AlvarMarkers, ar_tag_filter)
+    rospy.Subscriber('ar_pose_marker', AlvarMarkers, ar_tag_filter, queue_size=1)
     init_motion()
     rospy.Service('scan_server', Scan, handle_scan)
     print('\nScan server ready!\n\n')
