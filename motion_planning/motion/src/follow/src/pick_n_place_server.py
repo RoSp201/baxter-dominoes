@@ -10,7 +10,7 @@ from follow.srv import PickNPlace
 left_arm = left_gripper = scene = robot = None
 
 move_eef_step = 0.01
-velocity_scale_factor = 0.6
+velocity_scale_factor = 0.9
 
 def handle_pick_n_place(msg):
     """
@@ -40,7 +40,7 @@ def handle_pick_n_place(msg):
     goal2 = Pose()
     goal2.position.x = x
     goal2.position.y = y
-    goal2.position.z = z + 0.003
+    goal2.position.z = z + 0.0025
     goal2.orientation.x = 0.0
     goal2.orientation.y = -1.0
     goal2.orientation.z = 0.0
@@ -67,11 +67,12 @@ def handle_pick_n_place(msg):
     goal4.position.y = msg.target_location.pose.position.y
     goal4.position.z = z + 0.10
     
-    if msg.left_right == "L":
-        turn = -1.0    #rotate counter clockwise (positive radians)
-        turny = -1.0
-    elif msg.left_right == "R":
-        turn = 1.0     #clockwise
+    # NOTE: (A) I changed these at 4 AM. They may be wrong.
+    if msg.left_right == "R":
+        turn = 1.0    #rotate counter clockwise (positive radians)
+        turny = 1.0
+    elif msg.left_right == "L":
+        turn = -1.0     #clockwise
         turny = 1.0
     else:
         turn = 0.0
@@ -86,7 +87,7 @@ def handle_pick_n_place(msg):
     goal5 = Pose()
     goal5.position.x = msg.target_location.pose.position.x
     goal5.position.y = msg.target_location.pose.position.y
-    goal5.position.z = z + 0.003
+    goal5.position.z = z + 0.02
     goal5.orientation.x = turn
     goal5.orientation.y = turny
     goal5.orientation.z = 0.0
@@ -121,7 +122,7 @@ def handle_pick_n_place(msg):
     print "fraction 1: ", fraction
     print "going to staging area above domino to be picked up, no rotation yet"
     left_arm.execute(plan1)
-    rospy.sleep(3.0)
+    rospy.sleep(1.5)
 
     waypoints = []
     waypoints.append(goal2)
@@ -137,7 +138,7 @@ def handle_pick_n_place(msg):
     print "fraction 2: ", fraction
     print 'touch domino, no rotation yet'
     left_arm.execute(plan2)
-    rospy.sleep(2.0)
+    rospy.sleep(1.0)
     
     waypoints = []
     waypoints.append(goal3)
@@ -155,9 +156,8 @@ def handle_pick_n_place(msg):
     print "Turning on Suction."
     print "raise domino, no rotation yet"
     left_gripper.close(block=False)
-    rospy.sleep(1.0)
+    rospy.sleep(0.2)
     left_arm.execute(plan3)
-    rospy.sleep(1.0)
             
     waypoints = []
     waypoints.append(goal4)
@@ -174,7 +174,7 @@ def handle_pick_n_place(msg):
     print "fraction 4: ", fraction
     print "domino should be placed and correct orientation"
     left_arm.execute(plan4)
-    rospy.sleep(3.0)
+    rospy.sleep(1.5)
 
 
     waypoints = []
@@ -196,7 +196,7 @@ def handle_pick_n_place(msg):
 
     print('Turning Off Suction.')
     left_gripper.open(block=True)
-    rospy.sleep(1.0)
+    rospy.sleep(0.5)
 
     waypoints = []
     waypoints.append(goal6)
@@ -213,7 +213,7 @@ def handle_pick_n_place(msg):
     print "fraction 6: ", fraction
     print "raise gripper after placement, no rotation"
     left_arm.execute(plan6)
-    rospy.sleep(2.0)
+    rospy.sleep(1.0)
 
 
     waypoints = []
@@ -231,7 +231,7 @@ def handle_pick_n_place(msg):
     
     print "fraction 7: ", fraction
     print "move back to staging position in hand area, includes reset rotation"
-    left_arm.execute(plan7)
+    #left_arm.execute(plan7)
     rospy.sleep(1.0)
     print("done.")
 
@@ -246,7 +246,7 @@ def pick_n_place_server():
     scene = PlanningSceneInterface()
     left_arm = MoveGroupCommander('left_arm')
     left_arm.set_planner_id('RRTConnectkConfigDefault')
-    left_arm.set_planning_time(12.0)
+    left_arm.set_planning_time(7.0)
     left_gripper = baxter_gripper.Gripper('left')
     left_arm.allow_replanning(True)
     left_gripper.set_vacuum_threshold(2.0)

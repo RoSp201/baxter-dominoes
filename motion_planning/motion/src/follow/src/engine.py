@@ -46,8 +46,8 @@ TAGS_TO_PIPS = {
                 HAND_AR_NUM: (0, 0),
                 }
 
-TABLE_CENTER = [0.6, .2]
-SCAN_SIZE = [.3, .3]
+TABLE_CENTER = [0.7, .4]
+SCAN_SIZE = [.5, .5]
 
 
 class Player:
@@ -88,7 +88,7 @@ class Player:
         domino = None
         while not domino:
             domino = self.get_next_domino()
-            rospy.sleep(5.0)
+            rospy.sleep(2.0)
         pos_in_hand = self.add_domino_to_hand(domino)
         hand_coords = copy.deepcopy(self.hand_coords)
         # This assumes that Baxter's hand starts in the closest-left corner of the table and it grows to the right.
@@ -109,19 +109,25 @@ class Player:
         while not game_ended:
             #while it's baxter's turn
             while self.turns_taken % NUM_PLAYERS == 0:
-                rospy.sleep(5)
+                rospy.sleep(2)
                 newdoms = []
                 spots = self.spinner.get_open_spots([])
+                print("Scanning through open spots: {}".format([(spot[0].pips, spot[1]) for spot in spots]))
                 for spot in spots:
-                    pos = (spot[0].pose.x, spot[0].pose.y)
-                    newdoms.append(self.scan_for_dominoes(pos))
+                    pos = (spot[0].pose_st.pose.position.x, spot[0].pose_st.pose.position.y)
+                    print("Scanning through spot {}".format(pos))
+                    newscan = self.scan_for_dominoes(pos)
+                    if newscan:
+                        newdoms.extend([scan for scan in newscan])
+                print("NEWDOMS: {}".format(newdoms))
                 for newdom in newdoms:
                     norm = lambda p1, p2: math.sqrt((p1.pose.position.x - p2.pose.position.x)**2 + (p1.pose.position.y - p2.pose.position.y)**2)
 
-                    spot = min(spots, key= lambda dom: norm(newdom.pose_st, dom[0].pose_st))
+                    spot = min(spots, key= lambda dom: norm(newdom.pose_st, dom[0].pose_st) if (newdom.pips[0] in dom[0].pips) or (newdom.pips[1] in dom[0].pips) else 9999999999)
                     if spot[0].sides[spot[1]]:
                         print "ERR: found a domino at a spot where a domino already exists."
                     spot[0].sides[spot[1]] = newdom
+                    print("new domino {} at spot {} of domino {}".format(newdom.pips, spot[1], spot[0].pips))
 
                     # Find out which side of the new domino just got added to
                     pips = None
@@ -131,6 +137,7 @@ class Player:
                         pips = spot[0].pips[1]
 
                     # Update the new domino's adjacent dominoes.
+                    print("Appending domino {} to {}".format(newdom.pips, spot[0].pips))
                     if newdom.pips[0] == pips:
                         newdom.sides["top"] = spot[0]
                     elif newdom.pips[1] == pips:
@@ -158,36 +165,38 @@ class Player:
             self.pick_from_boneyard()
             move = self.best_move_greedy(self.hand, open_spots)
         domino_to_move = self.hand[move[0]]
+        print("DOMINO TO MOVE: {}".format(domino_to_move.pips))
         self.hand[move[0]] = None
         domino_to_move_to = open_spots[move[1]]
+        print("DOMINO TO MOVE TO: {}".format(domino_to_move_to[0].pips))
         # Calculate which direction to rotate the domino.
         LR = domino_to_move_to[0].get_domino_direction()
         rot = ""
         # If the domino with the open spot has its X axis pointing left:
         if LR == "L":
-            if move[2] == "bottom" and move[3] == "top" or\
-                    move[2] == "top" and move[3] == "bottom":
-                rot = "L"
-            else:
+            print("take_turn: Move to facing left")
+            print(move[2])
+            print(move[3])
+            if move[2] == move[3]:
+                print("setting rot to R")
                 rot = "R"
+            else:
+                print("setting rot to L")
+                rot = "L"
+
         # If the domino with the open spot has its X axis pointing right:
         if LR == "R":
-            if move[2] == "bottom" and move[3] == "top" or\
-                    move[2] == "top" and move[3] == "bottom":
-                rot = "R"
-            else:
+            print("take_turn: Move to facing right")
+            print(move[2])
+            print(move[3])
+            if move[2] == move[3]:
+                print("setting rot to L")
                 rot = "L"
+            else:
+                print("setting rot to R")
+                rot = "R"
 
-        move_to = domino_to_move_to[0].get_location_to_move_to(move[2])
-#        rospy.wait_for_service("translate_server")
-#        trans_move_to = PoseStamped()
-#        print "try to transform coordinates"
-#        try:
-#            translate = rospy.ServiceProxy("translate_server", Translate)
-#            trans_move_to = translate(move_to, 'left_hand_camera_axis')
-#        except rospy.ServiceException, e:
-#            print "Service call failed: %s" % e
-
+        move_to = domino_to_move_to[0].get_location_to_move_to(move[3])
         self.move_domino(domino_to_move, move_to, rot)
         domino_to_move.sides[move[2]] = domino_to_move_to[0]
         domino_to_move_to[0].sides[move[3]] = domino_to_move
@@ -197,25 +206,24 @@ class Player:
         #baxter_interface.Head().command_nod()
 
     def move_domino(self, domino_to_move, move_to, rot=""):
-        #move_to must be a posed stamp object
-        #get domino transformed coordinates
-        #third arg of pick_n_place is the direction that baxter needs to rotate the domino on the board.
-        print "\nTry to place domino on board using pick_n_place..."
+        print "Try to place domino {} at {} using pick_n_place...".format(domino_to_move, move_to)
         rospy.wait_for_service("pick_n_place_server")
         try:
             pick_n_place = rospy.ServiceProxy("pick_n_place_server", PickNPlace)
-#            p = PoseStamped()
-#            p.pose = domino_to_move.pose
-#            p.pose.orientation.y = -1.0
-#            p2 = PoseStamped()
-#            p2.pose = move_to
-#            p2.pose.orientation.y = -1.0
-#            response = pick_n_place(p, p2, rot)
             response = pick_n_place(domino_to_move.pose_st, move_to, rot)
             return response
         except rospy.ServiceException, e:
             print "Service call failed: %s" % e
-            domino_to_move.pos = move_to
+            domino_to_move.pose_st = move_to
+            # Hard-code the orientation if we're rotating.
+            if rot:
+                domino_to_move.pose_st.pose.orientation.x = 0
+                domino_to_move.pose_st.pose.orientation.y = 0
+                if rot == "L":
+                    domino_to_move.pose_st.pose.orientation.z = 1
+                elif rot == "R":
+                    domino_to_move.pose_st.pose.orientation.z = -1
+                domino_to_move.pose_st.pose.orientation.w = 0
         print "Domino was placed successfully."
 
     def scan_for_dominoes(self, center, num_dominoes=0):
@@ -233,6 +241,7 @@ class Player:
             # Make sure that we're not too off the mark on how many new dominoes we should have.
             if num_dominoes and len(newdoms) > num_dominoes:
                 print "ERR: {} dominoes expected but {} dominoes found.".format(num_dominoes, len(newdoms))
+            print("NEW DOMINOES: {}".format([dom.pips for dom in newdoms]))
             return newdoms
 
     def get_next_domino(self):
@@ -240,22 +249,17 @@ class Player:
         if dom:
             return dom[0]
         else:
+            print "No domino found. rescanning."
             return self.get_next_domino()
 
     def call_scan(self, center):
         tags, poses= self.blatnerize(center)
-        print "tags: {}".format(tags)
-        print "poses: {}".format(poses)
         dominoes = []
         for i in range(len(tags)):
             stamped = PoseStamped()
             stamped.header.frame_id = "base"
-            stamped.pose = poses[i]
+            stamped.pose = copy.deepcopy(poses[i])
             # This is to prevent bugs in translate_server.
-            stamped.pose.orientation.x = 0.0
-            stamped.pose.orientation.y = -1.0
-            stamped.pose.orientation.z = 0.0
-            stamped.pose.orientation.w = 0.0
             dominoes.append(Domino(TAGS_TO_PIPS[tags[i]], tags[i], stamped))
         return dominoes
 
@@ -270,7 +274,6 @@ class Player:
                 scan = rospy.ServiceProxy("scan_server", Scan, persistent=True)
                 response = scan(center, SCAN_SIZE)
                 tag_numbers, tag_poses = response.tagNumbers, response.arTagPoses
-                print "Scan returned {} and {}".format(tag_numbers, tag_poses)
                 move = True
             except rospy.ServiceException, e:
                 print "Service call failed: %s" % e
@@ -288,21 +291,25 @@ class Player:
                 curr = hand[i]
                 if not curr:
                     continue
-                currscore = curr.score()
+                currscore = curr.score(open_spots[spot][0])
                 if currscore < hiscore:
                     continue
-                if curr.pips[0] == open_spots[spot][0].pips[0]:
-                    hiscore = currscore
-                    best_play = (i, spot, "top", "top")
-                elif curr.pips[0] == open_spots[spot][0].pips[1]:
-                    hiscore = currscore
-                    best_play = (i, spot, "top", "bottom")
-                elif curr.pips[1] == open_spots[spot][0].pips[0]:
-                    hiscore = currscore
-                    best_play = (i, spot, "bottom", "top")
-                elif curr.pips[1] == open_spots[spot][0].pips[1]:
-                    hiscore = currscore
-                    best_play = (i, spot, "bottom", "bottom")
+                if open_spots[spot][1] == "top":
+                    if curr.pips[0] == open_spots[spot][0].pips[0]:
+                        hiscore = currscore
+                        best_play = (i, spot, "top", "top")
+                    elif curr.pips[1] == open_spots[spot][0].pips[0]:
+                        hiscore = currscore
+                        best_play = (i, spot, "bottom", "top")
+
+                if open_spots[spot][1] == "bottom":
+                    if curr.pips[0] == open_spots[spot][0].pips[1]:
+                        hiscore = currscore
+                        best_play = (i, spot, "top", "bottom")
+                    elif curr.pips[1] == open_spots[spot][0].pips[1]:
+                        hiscore = currscore
+                        best_play = (i, spot, "bottom", "bottom")
+
         return best_play
 
 
@@ -336,6 +343,7 @@ class Domino:
         bottom = self.sides["bottom"]
         spots = []
         seen.append(self)
+        print("get_open_spots for {}: spots are {}".format(self.pips, self.sides))
         if top and top not in seen:
             spots.extend(top.get_open_spots(seen))
         elif top not in seen:
@@ -346,29 +354,20 @@ class Domino:
             spots.append((self, "bottom"))
         return spots
 
-    # def find_domino(self, pips):
-    #     if not pips:
-    #         return None
-    #     if self.pips == pips:
-    #         return self
-    #     else:
-    #         top = find_domino(self.sides["top"])
-    #         if top:
-    #             return top
-
-    #         bottom = find_domino(self.sides["top"])
-    #         if bottom:
-    #             return bottom
-
-    def score(self):
+    def score(self, other):
         """Returns the sum of the pips on a domino.
         We want to get rid of dominoes with higher scores."""
-        return sum(self.pips)
+        tocheck = sum(self.pips) + sum(other.pips)
+        if tocheck % 5 == 0:
+            return tocheck
+        else:
+            return 0
+
 
     def get_domino_direction(self):
         temp = self.pose_st
         quats = temp.pose.orientation
-        if quats.x > 0:
+        if quats.z > 0:
             return "L"
         else:
             return "R"
@@ -376,6 +375,7 @@ class Domino:
     def get_location_to_move_to(self, side):
         """Returns the offset from this domino's origin to apply to a domino if placing it at side side, specified in this domino's reference frame."""
         temp = PoseStamped()
+        temp.pose.position = copy.deepcopy(self.pose_st.pose.position)
         temp.header.frame_id = "base"
         if self.get_domino_direction() == "L":
             if side == "top":

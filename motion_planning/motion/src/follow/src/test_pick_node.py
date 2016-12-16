@@ -63,7 +63,7 @@ def follow(msg):
         #TEST: See if pick and place service works correctly
         rospy.wait_for_service("pick_n_place_server")
         try:
-            left = "R"
+            left = sys.argv[2]
             pick_n_place = rospy.ServiceProxy("pick_n_place_server", PickNPlace)
             response = pick_n_place(start_pose, goal_pose, left)
             return response
@@ -84,8 +84,8 @@ def test_pick_node():
 
 
 if __name__ == '__main__':
-    if len(sys.argv) < 2:
-        sys.exit('Use: test_pick_node.py [AR tag number]')
+    if len(sys.argv) < 3:
+        sys.exit('Use: test_pick_node.py [AR tag number] [orientation (L or R)]')
     else:
         target_tag = int(sys.argv[1])
         test_pick_node()
