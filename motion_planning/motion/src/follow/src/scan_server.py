@@ -71,9 +71,10 @@ def handle_scan(request):
     #    ______^______
     #   |      :      |
     # y<|......O......|
-    #   |______:______|._(x0,y0)
+    #   |______:______|
     #
-    uint32[] tableCenter
+    float64[] tableCenter
+    float64[] tableSize
     ---
     uint32[] tagNumbers
     geometry_msgs/Pose[] arTagPoses
