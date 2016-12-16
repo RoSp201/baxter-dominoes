@@ -32,11 +32,11 @@ translate_server = None
 # If a tag is kept from one read to the next, adds list of AlvarMarker for that tag
 raw_tags = defaultdict(list) # tag number: [(confidence, Position, Orientation), ...]
 # Once a tag in raw_tags has a count of REQUIRED_COUNT, it's added to seen_tags
-REQUIRED_COUNT = 6
+REQUIRED_COUNT = 5
 MAX_SCANS = REQUIRED_COUNT+2
 seen_tags = dict() # tag number: Pose
 # Counts scans completed at any one location
-SCAN_COUNTER_DEFAULT = -20
+SCAN_COUNTER_DEFAULT = -60
 scan_counter = SCAN_COUNTER_DEFAULT
 # Synchronization for scanning and moving
 scan_cv = Condition()
@@ -53,7 +53,7 @@ def hold_scan():
         scan_cv.wait()
         # Wait returns with lock acquired
     # Exits with cv acquired
-    print(seen_tags.keys())
+    print(seen_tags.items())
     print('Finished one location')
     scan_call_in_progress = False
 
@@ -157,17 +157,15 @@ def ar_tag_filter(msg):
         pass
     elif current_tags:
         current_tag_ids = set(zip(*current_tags)[0])
-        print(current_tag_ids)
         # Remove tags from raw dict that aren't seen this round
         for old_tag_id in raw_tags.keys():
             if old_tag_id not in current_tag_ids:
                 del raw_tags[old_tag_id]
         # Add all poses seen
         for (tag_id, pose) in current_tags:
-            print('Seen {}'.format(tag_id))
             if not all(np.abs(np.array([pose.pose.position.x, pose.pose.position.y])) <  fov/2):
                 continue
-            print("test pose: {}".format(pose))
+            print('Seen {}'.format(tag_id))
             while True:
                 try:
                     print('try to transform coordinates')
@@ -177,7 +175,6 @@ def ar_tag_filter(msg):
                     break
                 except rospy.ServiceException as e:
                     print('Service call failed: {}'.format(e))
-            print('coordinates successfully transformed.')
             print('Pose position: \n{}'.format(pose.pose.position))
             tag_list = raw_tags[tag_id]
             tag_list.append((pose.pose.position, pose.pose.orientation))
