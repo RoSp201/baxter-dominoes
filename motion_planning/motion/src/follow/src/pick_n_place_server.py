@@ -10,7 +10,7 @@ from follow.srv import PickNPlace
 left_arm = left_gripper = scene = robot = None
 
 move_eef_step = 0.01
-velocity_scale_factor = 0.1
+velocity_scale_factor = 0.6
 
 def handle_pick_n_place(msg):
     """
@@ -32,7 +32,7 @@ def handle_pick_n_place(msg):
     goal.position.y = y
     goal.position.z = z + 0.10
     goal.orientation.x = 0.0
-    goal.orientation.y = 1.0
+    goal.orientation.y = -1.0
     goal.orientation.z = 0.0
     goal.orientation.w = 0.0
 
@@ -40,9 +40,9 @@ def handle_pick_n_place(msg):
     goal2 = Pose()
     goal2.position.x = x
     goal2.position.y = y
-    goal2.position.z = z + 0.005
+    goal2.position.z = z + 0.003
     goal2.orientation.x = 0.0
-    goal2.orientation.y = 1.0
+    goal2.orientation.y = -1.0
     goal2.orientation.z = 0.0
     goal2.orientation.w = 0.0 
 
@@ -86,7 +86,7 @@ def handle_pick_n_place(msg):
     goal5 = Pose()
     goal5.position.x = msg.target_location.pose.position.x
     goal5.position.y = msg.target_location.pose.position.y
-    goal5.position.z = z + 0.005
+    goal5.position.z = z + 0.003
     goal5.orientation.x = turn
     goal5.orientation.y = turny
     goal5.orientation.z = 0.0
@@ -154,7 +154,7 @@ def handle_pick_n_place(msg):
     print "fraction 3: ", fraction
     print "Turning on Suction."
     print "raise domino, no rotation yet"
-    left_gripper.close(block=True)
+    left_gripper.close(block=False)
     rospy.sleep(1.0)
     left_arm.execute(plan3)
     rospy.sleep(1.0)

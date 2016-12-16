@@ -32,11 +32,11 @@ translate_server = None
 # If a tag is kept from one read to the next, adds list of AlvarMarker for that tag
 raw_tags = defaultdict(list) # tag number: [(confidence, Position, Orientation), ...]
 # Once a tag in raw_tags has a count of REQUIRED_COUNT, it's added to seen_tags
-REQUIRED_COUNT = 3
+REQUIRED_COUNT = 6
 MAX_SCANS = REQUIRED_COUNT+2
 seen_tags = dict() # tag number: Pose
 # Counts scans completed at any one location
-SCAN_COUNTER_DEFAULT = -5
+SCAN_COUNTER_DEFAULT = -20
 scan_counter = SCAN_COUNTER_DEFAULT
 # Synchronization for scanning and moving
 scan_cv = Condition()
@@ -170,6 +170,7 @@ def ar_tag_filter(msg):
             print('Seen {}'.format(tag_id))
             if not all(np.abs(np.array([pose.pose.position.x, pose.pose.position.y])) <  fov/2):
                 continue
+            print("test pose: {}".format(pose))
             while True:
                 try:
                     print('try to transform coordinates')
@@ -227,22 +228,22 @@ def init_motion():
 
 def scan_server():
     rospy.init_node('scan_server')
-    rospy.Subscriber('ar_pose_marker', AlvarMarkers, ar_tag_filter, queue_size=1)
+    rospy.Subscriber('ar_pose_marker', AlvarMarkers, ar_tag_filter, queue_size=1, buff_size=2**24)
     init_motion()
     rospy.Service('scan_server', Scan, handle_scan)
     print('\nScan server ready!\n\n')
     rospy.spin()
 
 
-def test_server():
-    class ScanRequest(object):
-        def __init__(self, tableCenter, tableSize):
-            assert len(tableCenter) == 2
-            assert len(tableSize) == 2
-            self.tableCenter = np.array(tableCenter)
-            self.tableSize = np.array(tableSize)
+# def test_server():
+#     class ScanRequest(object):
+#         def __init__(self, tableCenter, tableSize):
+#             assert len(tableCenter) == 2
+#             assert len(tableSize) == 2
+#             self.tableCenter = np.array(tableCenter)
+#             self.tableSize = np.array(tableSize)
 
-    handle_scan(ScanRequest([0.4, 0.5], [0.4, 0.6]))
+#     handle_scan(ScanRequest([0.4, 0.5], [0.4, 0.6]))
 
 
 if __name__ == '__main__':

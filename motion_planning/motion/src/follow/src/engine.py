@@ -17,8 +17,8 @@ CTRL+F your name in all caps for anything I asked you to do.
 
 # Constants to figure out
 VERT_VERT_OFFSET = .13
-HORIZ_VER_OFFSET = 0.13
-HAND_SPACE_OFFSET = .13 #0.03
+HORIZ_VER_OFFSET = 0.18
+HAND_SPACE_OFFSET = .10 #0.03
 HAND_AR_NUM = 31
 NUM_PLAYERS = 2
 TAGS_TO_PIPS = {
@@ -46,8 +46,8 @@ TAGS_TO_PIPS = {
                 HAND_AR_NUM: (0, 0),
                 }
 
-TABLE_CENTER = [0.6, .4]
-SCAN_SIZE = [.2, .2]
+TABLE_CENTER = [0.6, .2]
+SCAN_SIZE = [.3, .3]
 
 
 class Player:
@@ -67,6 +67,7 @@ class Player:
         del self.seen[HAND_AR_NUM]
         self.hand = self.seen.values()
         i = 1
+        print "SEEN: {}".format(self.seen)
         for domino in self.hand:
             hand_coords = copy.deepcopy(self.hand_coords)
             hand_coords.pose.position.y -= (i * HAND_SPACE_OFFSET)
@@ -82,7 +83,6 @@ class Player:
     def pick_from_boneyard(self):
         """Wait for a player to give us a domino"""
         # Make baxter signal that he can't make a move by nodding. #NOTE: Make sure head_action server running
-        #baxter_interface.Head().command_nod()
         print "\nBaxter nodded in request for a new domino."
         rospy.sleep(5.0)
         domino = None
@@ -259,18 +259,21 @@ class Player:
         return dominoes
 
     def blatnerize(self, center):
-        rospy.wait_for_service("scan_server")
+        
         print "\nTry to do a scan"
         tag_numbers, tag_poses = None, None
-        while 1:
+        move = False
+        while not move:
+            rospy.wait_for_service("scan_server")
             try:
                 scan = rospy.ServiceProxy("scan_server", Scan, persistent=True)
                 response = scan(center, SCAN_SIZE)
                 tag_numbers, tag_poses = response.tagNumbers, response.arTagPoses
                 print "Scan returned {} and {}".format(tag_numbers, tag_poses)
-                break
+                move = True
             except rospy.ServiceException, e:
                 print "Service call failed: %s" % e
+
         print "Scan successful."
         return tag_numbers, tag_poses
 
@@ -342,19 +345,19 @@ class Domino:
             spots.append((self, "bottom"))
         return spots
 
-    def find_domino(self, pips):
-        if not pips:
-            return None
-        if self.pips == pips:
-            return self
-        else:
-            top = find_domino(self.sides["top"])
-            if top:
-                return top
+    # def find_domino(self, pips):
+    #     if not pips:
+    #         return None
+    #     if self.pips == pips:
+    #         return self
+    #     else:
+    #         top = find_domino(self.sides["top"])
+    #         if top:
+    #             return top
 
-            bottom = find_domino(self.sides["top"])
-            if bottom:
-                return bottom
+    #         bottom = find_domino(self.sides["top"])
+    #         if bottom:
+    #             return bottom
 
     def score(self):
         """Returns the sum of the pips on a domino.
@@ -383,9 +386,5 @@ class Domino:
             if side == "bottom":
                 temp.pose.position.y += VERT_VERT_OFFSET
         return temp
-        #if "side" == "left":
-        #    temp.pose.position.y += HORIZ_VERT_OFFSET
-        #if "side" == "right":
-        #    temp.pose.position.y -= HORIZ_VERT_OFFSET
 
 Player()
