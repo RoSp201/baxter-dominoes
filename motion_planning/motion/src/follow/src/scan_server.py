@@ -36,7 +36,8 @@ REQUIRED_COUNT = 3
 MAX_SCANS = REQUIRED_COUNT+2
 seen_tags = dict() # tag number: Pose
 # Counts scans completed at any one location
-scan_counter = 0
+SCAN_COUNTER_DEFAULT = -5
+scan_counter = SCAN_COUNTER_DEFAULT
 # Synchronization for scanning and moving
 scan_cv = Condition()
 scan_call_in_progress = False
@@ -45,7 +46,7 @@ scan_call_in_progress = False
 def hold_scan():
     # Enters with cv acquired
     global scan_counter, scan_call_in_progress
-    scan_counter = 0
+    scan_counter = SCAN_COUNTER_DEFAULT
     scan_call_in_progress = True
     while scan_counter < MAX_SCANS:
         # Release lock and block
@@ -153,7 +154,9 @@ def ar_tag_filter(msg):
 
     # Extract useful information, and exclude tags that already passed the filter (only accept ar tags 0-31)
     current_tags = [(marker.id, marker.pose) for marker in msg.markers if marker.id not in seen_tags and marker.id < 32]
-    if current_tags:
+    if scan_counter < 0:
+        pass
+    elif current_tags:
         current_tag_ids = set(zip(*current_tags)[0])
         print(current_tag_ids)
         # Remove tags from raw dict that aren't seen this round
@@ -220,16 +223,9 @@ def init_motion():
     left_arm.set_end_effector_link('left_gripper')
     left_arm.set_pose_reference_frame('base')
 
-def init_filter():
-    global translate_server
-    rospy.wait_for_service('translate_server')
-    translate_server = rospy.ServiceProxy('translate_server', Translate, persistent=True)
-    #rospy.init_node('ar_tag_filter', anonymous=True)
-    rospy.Subscriber('ar_pose_marker', AlvarMarkers, ar_tag_filter)
-
 def scan_server():
     rospy.init_node('scan_server')
-    init_filter()
+    rospy.Subscriber('ar_pose_marker', AlvarMarkers, ar_tag_filter)
     init_motion()
     rospy.Service('scan_server', Scan, handle_scan)
     print('\nScan server ready!\n\n')
