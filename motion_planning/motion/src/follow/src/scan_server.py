@@ -89,15 +89,17 @@ def handle_scan(request):
     print(n_scans)
     print(scan_spacing)
 
-    x0, y0 = origin - (dim/2)
+    front_right_corner = origin - (dim/2)
 
     if not ROS_AVAILABLE:
         print('Center: {:.2f}, {:.2f}'.format(*origin))
         print('Table size: {:.2f}, {:.2f}'.format(*dim))
-        print('Front right corner: {:.2f}, {:.2f}'.format(x0, y0))
+        print('Front right corner: {:.2f}, {:.2f}'.format(*front_right_corner))
         return
 
     # Move Baxter's camera to the front right corner of the table
+    first_point = front_right_corner + scan_spacing/2
+    x0, y0 = first_point
     next_point = Point(x0, y0, z0)
     next_quat = Quaternion(0, -1, 0, 0)
     next_pose = PoseStamped()
