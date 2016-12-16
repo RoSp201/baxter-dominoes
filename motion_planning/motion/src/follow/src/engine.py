@@ -249,6 +249,7 @@ class Player:
         dominoes = []
         for i in range(len(tags)):
             stamped = PoseStamped()
+            stamped.header.frame_id = "base"
             stamped.pose = poses[i]
             # This is to prevent bugs in translate_server.
             stamped.pose.orientation.x = 0.0
@@ -372,6 +373,7 @@ class Domino:
     def get_location_to_move_to(self, side):
         """Returns the offset from this domino's origin to apply to a domino if placing it at side side, specified in this domino's reference frame."""
         temp = PoseStamped()
+        temp.header.frame_id = "base"
         if self.get_domino_direction() == "L":
             if side == "top":
                 temp.pose.position.y += VERT_VERT_OFFSET
