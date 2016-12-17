@@ -10,7 +10,7 @@ from follow.srv import PickNPlace
 left_arm = left_gripper = scene = robot = None
 
 move_eef_step = 0.01
-velocity_scale_factor = 0.9
+velocity_scale_factor = 0.5
 
 def handle_pick_n_place(msg):
     """
@@ -249,7 +249,7 @@ def pick_n_place_server():
     left_arm.set_planning_time(7.0)
     left_gripper = baxter_gripper.Gripper('left')
     left_arm.allow_replanning(True)
-    left_gripper.set_vacuum_threshold(2.0)
+    left_gripper.set_vacuum_threshold(1.5)
     left_arm.set_end_effector_link("left_gripper")
     left_arm.set_pose_reference_frame('base')
     left_arm._g.set_max_velocity_scaling_factor(velocity_scale_factor)

@@ -22,8 +22,8 @@ class DominoService:
     rospy.init_node('cam_listener')
 
     #Subscribe to the image topic
-    #rospy.Subscriber("/cameras/left_hand_camera/image", Image, self.imgReceived)
-    rospy.Subscriber("/usb_cam/image_raw", Image, self.imgReceived)
+    rospy.Subscriber("/cameras/left_hand_camera/image", Image, self.imgReceived)
+    #rospy.Subscriber("/usb_cam/image_raw", Image, self.imgReceived)
     #rospy.Subscriber("/testimg", Image, self.imgReceived)
 
 

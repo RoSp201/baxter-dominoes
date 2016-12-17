@@ -43,7 +43,7 @@ def handle_translate(coords):
             transform = tf_buffer.lookup_transform("base",
                                        "left_hand_camera_axis", #source frame
                                        rospy.Time(0), #get the tf at first available time
-                                       rospy.Duration(7.0)) #wait for 7 seconds
+                                       rospy.Duration(8.0)) #wait for 8 seconds
             base_gripper_pose_stamped = tf2_geometry_msgs.do_transform_pose(coords.pose_stamped, transform)
 
         except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):

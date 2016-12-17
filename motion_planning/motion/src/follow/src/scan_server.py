@@ -127,6 +127,12 @@ def handle_scan(request):
 
         direction *= -1
 
+    # Offset a little in case we are doing one scan point
+    # so compute_cartesian_path has a non-zero length path
+    next_pose.pose.position.x -= 0.03
+    next_pose.pose.position.y -= 0.03
+    move_to_position(next_pose)
+
     scan_cv.release()
     # Converts seen_tags dictionary to [(1, 2, ...), (Pose1, Pose2, ...)]
     return zip(*seen_tags.items())
@@ -164,6 +170,7 @@ def ar_tag_filter(msg):
         # Add all poses seen
         for (tag_id, pose) in current_tags:
             if not all(np.abs(np.array([pose.pose.position.x, pose.pose.position.y])) <  fov/2):
+                print("skipping tag {}".format(tag_id))
                 continue
             print('Seen {}'.format(tag_id))
             while True:

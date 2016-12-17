@@ -114,7 +114,9 @@ class Player:
                 spots = self.spinner.get_open_spots([])
                 print("Scanning through open spots: {}".format([(spot[0].pips, spot[1]) for spot in spots]))
                 for spot in spots:
-                    pos = (spot[0].pose_st.pose.position.x, spot[0].pose_st.pose.position.y)
+                    emptypos = spot[0].get_location_to_move_to(spot[1])
+                    #pos = (spot[0].pose_st.pose.position.x, spot[0].pose_st.pose.position.y)
+                    pos = (emptypos.pose.position.x, emptypos.pose.position.y)
                     print("Scanning through spot {}".format(pos))
                     newscan = self.scan_for_dominoes(pos)
                     if newscan:
@@ -241,7 +243,7 @@ class Player:
             # Make sure that we're not too off the mark on how many new dominoes we should have.
             if num_dominoes and len(newdoms) > num_dominoes:
                 print "ERR: {} dominoes expected but {} dominoes found.".format(num_dominoes, len(newdoms))
-            print("NEW DOMINOES: {}".format([dom.pips for dom in newdoms]))
+            print("NEW DOMINOES: {}".format([(dom.pips, dom.pose_st) for dom in newdoms]))
             return newdoms
 
     def get_next_domino(self):
@@ -264,7 +266,6 @@ class Player:
         return dominoes
 
     def blatnerize(self, center):
-        
         print "\nTry to do a scan"
         tag_numbers, tag_poses = None, None
         move = False
