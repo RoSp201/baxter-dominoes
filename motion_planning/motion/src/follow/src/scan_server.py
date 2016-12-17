@@ -35,7 +35,7 @@ REQUIRED_COUNT = 2
 MAX_SCANS = REQUIRED_COUNT+2
 seen_tags = dict() # tag number: Pose
 # Counts scans completed at any one location
-SCAN_COUNTER_DEFAULT = -30
+SCAN_COUNTER_DEFAULT = -60
 scan_counter = SCAN_COUNTER_DEFAULT
 # Synchronization for scanning and moving
 scan_cv = Condition()
